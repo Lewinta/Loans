@@ -3,9 +3,9 @@ import frappe
 def get_notification_config():
 	return {
 		"for_doctype": {
-			"Loan": "fimax.notifications.loans",
-			"Loan Application": { "status": "Open" },
-			"Loan Record": "fimax.notifications.loan_records",
+			# "Loan": "fimax.notifications.loans",
+			# "Loan Application": { "status": "Open" },
+			# "Loan Record": "fimax.notifications.loan_records",
 			# "Loan Application": "fimax.notifications.loan_appls",
 		}
 	}

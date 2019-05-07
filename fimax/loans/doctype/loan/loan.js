@@ -303,15 +303,17 @@ frappe.ui.form.on('Loan', {
 				() => frm.trigger("toggle_loan_type_mandatory_fields")
 			]);
 		}
-	},
+	}, 
 	"mode_of_payment": (frm) => {
+		if (!frm.doc.mode_of_payment)
+			return
 		frappe.db.get_value("Mode of Payment Account", {
 			"parent": frm.doc.mode_of_payment,
 			"company": frm.doc.company
-		}, ["default_account"]).then((response) => {
-			let data = response.message;
+		}, ["default_account"], ({default_account}) => {
+			
 
-			if (! (data && data["default_account"])) {
+			if (! default_account ) {
 				frappe.msgprint(repl(`Please set default Cash or Bank account in Mode of Payment 
 					<a href="/desk#Form/Mode of Payment/%(mode_of_payment)s">%(mode_of_payment)s</a>
 					for company %(company)s`, frm.doc));

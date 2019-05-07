@@ -257,8 +257,8 @@ frappe.ui.form.on('Loan Application', {
 		}
 	},
 	"validate_legal_expenses_rate": (frm) => {
-		if (!frm.doc.legal_expenses_rate) {
-			frappe.throw(__("Missing Legal Expenses Rate"));
+		if (frm.doc.legal_expenses_rate < 0) {
+			frappe.throw(__("Invalid Legal Expenses Rate"));
 		}
 	},
 	"validate_requested_gross_amount": (frm) => {
