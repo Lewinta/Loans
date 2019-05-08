@@ -445,9 +445,8 @@ frappe.ui.form.on('Loan Application', {
 		});
 	},
 	"calculate_loan_amount": (frm) => {
-		let can_proceed = frm.doc.requested_gross_amount && frm.doc.legal_expenses_rate;
 
-		if (can_proceed) {
+		if (frm.doc.requested_gross_amount) {
 			frappe.run_serially([
 				() => frm.trigger("calculate_legal_expenses_amount"),
 				() => frappe.timeout(0.5),

@@ -125,6 +125,7 @@ frappe.ui.form.on('Loan', {
 				"filters": {
 					"is_group": 0,
 					"account_currency": frm.doc.currency,
+					"company": frm.doc.company,
 					"account_type": "Receivable"
 				}
 			};
@@ -136,6 +137,7 @@ frappe.ui.form.on('Loan', {
 				"filters": {
 					"is_group": 0,
 					"account_currency": frm.doc.currency,
+					"company": frm.doc.company,
 					"account_type": "Income Account"
 				}
 			};
@@ -147,6 +149,7 @@ frappe.ui.form.on('Loan', {
 				"filters": {
 					"is_group": 0,
 					"account_currency": frm.doc.currency,
+					"company": frm.doc.company,
 					"account_type": ["in", "Bank, Cash"]
 				}
 			};
