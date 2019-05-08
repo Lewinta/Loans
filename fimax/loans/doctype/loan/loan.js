@@ -73,14 +73,32 @@ frappe.ui.form.on('Loan', {
 			frm.page.set_inner_btn_group_as_primary(__("Make"));
 		}
 	},
+	"company": (frm) => {
+		if (!frm.doc.company)
+			return
+
+		frm.trigger("set_defaults");
+	},
 	"set_defaults": (frm) => {
 		const doctype = "Company Defaults",
 			filters = frm.doc.company,
-			fieldname = ["default_mode_of_payment", "disbursement_account"], 
-			callback = ({ default_mode_of_payment, disbursement_account }) => {
+			fieldname = [
+				"default_mode_of_payment",
+				"disbursement_account",
+				"income_account",
+				"party_account",
+			], 
+			callback = ({
+				default_mode_of_payment,
+				disbursement_account,
+				income_account,
+				party_account
+			}) => {
 				$.each({
 					"mode_of_payment": default_mode_of_payment,
-					"disbursement_account": disbursement_account 
+					"disbursement_account": disbursement_account, 
+					"income_account": income_account, 
+					"party_account": party_account, 
 				}, (key, value) => frm.set_value(key, value || ""));
 			};
 		frappe.db.get_value(doctype, filters, fieldname, callback);
