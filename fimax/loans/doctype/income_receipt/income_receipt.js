@@ -165,7 +165,7 @@ frappe.ui.form.on('Income Receipt', {
 			primary_label = __("Apply Changes"),
 
 			callback = (args) => {
-				frm.call(method="apply_changes", args=args)
+				frm.call("apply_changes", args=args)
 					.then(response => { 
 						frm.refresh();
 						frm.trigger("add_quick_entry_button");
