@@ -101,7 +101,18 @@ frappe.ui.form.on('Loan', {
 					"party_account": party_account, 
 				}, (key, value) => frm.set_value(key, value || ""));
 			};
-		frappe.db.get_value(doctype, filters, fieldname, callback);
+		
+		try {
+			frappe.db.get_value(doctype, filters, fieldname, callback);
+		}
+		catch(err) {
+		  	frappe.msgprint(
+		  		"Please create a new Company Defaults for <b>"+
+		  			cur_frm.doc.company+"</b>", "Missing Company Defaults"
+		  	)
+		}
+
+
 	},
 	"set_status_indicators": (frm) => {
 		let grid = frm.get_field('loan_schedule').grid;
