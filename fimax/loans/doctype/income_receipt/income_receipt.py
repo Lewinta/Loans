@@ -112,7 +112,7 @@ class IncomeReceipt(Document):
 	def calculate_totals(self):
 		self.grand_total = sum([row.base_total_amount for row in self.income_receipt_items])
 		self.total_outstanding = sum([row.base_outstanding_amount for row in self.income_receipt_items])
-		self.total_paid = self.total_outstanding
+		self.total_paid = sum([row.allocated_amount for row in self.income_receipt_items])
 
 		self.difference_amount = 0.000
 

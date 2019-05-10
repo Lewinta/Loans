@@ -80,39 +80,40 @@ frappe.ui.form.on('Loan', {
 		frm.trigger("set_defaults");
 	},
 	"set_defaults": (frm) => {
-		const doctype = "Company Defaults",
-			filters = frm.doc.company,
-			fieldname = [
-				"default_mode_of_payment",
-				"disbursement_account",
-				"income_account",
-				"party_account",
-			], 
-			callback = ({
-				default_mode_of_payment,
-				disbursement_account,
-				income_account,
-				party_account
-			}) => {
-				$.each({
-					"mode_of_payment": default_mode_of_payment,
-					"disbursement_account": disbursement_account, 
-					"income_account": income_account, 
-					"party_account": party_account, 
-				}, (key, value) => frm.set_value(key, value || ""));
-			};
-		
-		try {
-			frappe.db.get_value(doctype, filters, fieldname, callback);
-		}
-		catch(err) {
-		  	frappe.msgprint(
+		frappe.db.exists("Company Defaults", cur_frm.doc.company).then( r => {
+			if (!r){
+				frappe.msgprint(
 		  		"Please create a new Company Defaults for <b>"+
 		  			cur_frm.doc.company+"</b>", "Missing Company Defaults"
-		  	)
-		}
+		  		)	
+				
+				return
+			}
 
-
+			const doctype = "Company Defaults",
+				filters = frm.doc.company,
+				fieldname = [
+					"default_mode_of_payment",
+					"disbursement_account",
+					"income_account",
+					"party_account",
+				], 
+				callback = ({
+					default_mode_of_payment,
+					disbursement_account,
+					income_account,
+					party_account
+				}) => {
+					$.each({
+						"mode_of_payment": default_mode_of_payment,
+						"disbursement_account": disbursement_account, 
+						"income_account": income_account, 
+						"party_account": party_account, 
+					}, (key, value) => frm.set_value(key, value || ""));
+				};
+			
+				frappe.db.get_value(doctype, filters, fieldname, callback);
+		})
 	},
 	"set_status_indicators": (frm) => {
 		let grid = frm.get_field('loan_schedule').grid;
