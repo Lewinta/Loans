@@ -10,6 +10,7 @@ frappe.ui.form.on('Company Defaults', {
 			"set_party_account_query",
 			"set_income_account_query", 
 			"set_disbursement_account_query", 
+			"set_differ_income_queries", 
 			
 		];
 
@@ -47,5 +48,20 @@ frappe.ui.form.on('Company Defaults', {
 				}
 			};
 		});
+	},
+	set_differ_income_queries: frm => {
+		fields = ["interest_debit", "interest_credit"]; 
+
+		$.map(fields, field => {
+			frm.set_query( field, () => {
+				return {
+					"filters": {
+						"is_group": 0,
+						"company": frm.doc.company,
+					}
+				};
+			});
+
+		})
 	},
 });
