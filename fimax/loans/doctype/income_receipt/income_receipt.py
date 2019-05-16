@@ -129,6 +129,12 @@ class IncomeReceipt(Document):
 
 	def get_double_matched_entry(self, row):
 		from erpnext.accounts.utils import get_company_default
+		
+		differed_interest = frappe.get_value(
+			"Company Defaults",
+			self.company,
+			"include_interest_entry"
+		) or 0
 
 		base_gl_entry = {
 			"posting_date": self.posting_date,
@@ -157,6 +163,41 @@ class IncomeReceipt(Document):
 			"credit": flt(row.base_allocated_amount, 2),
 			"credit_in_account_currency": flt(row.allocated_amount, 2),
 		})
+		
+		if differed_interest and row.loan_charges_type == "Interest":
+			interest_debit, interest_credit, series = frappe.get_value(
+				"Company Defaults",
+				self.company,
+				["interest_debit", "interest_credit", "series"]
+				)
+
+			jv = frappe.new_doc("Journal Entry")
+			
+			jv.update({
+				"posting_date": self.posting_date,
+				"naming_series": series if series else "JV-.#####",
+				"company": self.company,
+				"cost_center": get_company_default(self.company, "cost_center"),
+				"user_remark": """Interest received from {}
+				 loan grant number {}""".format(row.parent, self.loan) 
+			})
+
+			jv.append("accounts", {
+				"account": interest_debit,
+				"account_currency": row.account_currency,
+				"debit": flt(row.base_allocated_amount, 2),
+				"debit_in_account_currency": flt(row.allocated_amount, 2),
+			})
+
+			jv.append("accounts", {
+				"account": interest_credit,
+				"account_currency": row.account_currency,
+				"credit": flt(row.base_allocated_amount, 2),
+				"credit_in_account_currency": flt(row.allocated_amount, 2),
+			})
+
+			jv.save()
+			jv.submit()
 
 		return [debit_gl_entry, credit_gl_entry]
 
