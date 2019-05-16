@@ -339,8 +339,8 @@ frappe.ui.form.on('Income Receipt', {
 			row.against_account = frm.doc.income_account;
 			row.against_account_currency = frm.doc.income_account_currency;
 			row.against_exchange_rate = frm.doc.exchange_rate;
-			row.allocated_amount = row.base_outstanding_amount / row.against_exchange_rate;
-			row.base_allocated_amount = row.base_outstanding_amount;
+			// row.allocated_amount = row.base_outstanding_amount / row.against_exchange_rate;
+			// row.base_allocated_amount = row.base_outstanding_amount;
 			// row.party_exchange_rate = frm.doc.exchange_rate;
 		});
 
