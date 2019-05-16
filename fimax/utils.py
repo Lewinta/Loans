@@ -70,6 +70,7 @@ def apply_changes_from_quick_income_receipt(doc, insurance_amount=.000, gps_amou
 
 			loan_charge = doc.get_income_receipt_item(loan_doc, charge)
 			loan_charge.allocated_amount = 0.000
+			loan_charge.base_allocated_amount = 0.000
 
 			# skip if there is not money for this loan charges type
 			if not loan_charge.loan_charges_type in loan_charges_list:
@@ -107,7 +108,6 @@ def apply_changes_from_quick_income_receipt(doc, insurance_amount=.000, gps_amou
 		if total_unallocated > 0.000:
 			frappe.msgprint(_("""Warning: There is an unallocated balance of ${0}
 				""".format(frappe.format_value(total_unallocated, df={"fieldtype": "Currency"}))))
-
 		doc.calculate_totals()
 
 def get_loan_charges_list(insurance_amount=.000, gps_amount=.000, capital_amount=.000, 
@@ -144,11 +144,13 @@ def get_loan_charges_list(insurance_amount=.000, gps_amount=.000, capital_amount
 def get_new_amount(charge, loan_charge, allocated_amount):
 	if allocated_amount < charge.outstanding_amount:
 		loan_charge.allocated_amount = allocated_amount
+		loan_charge.base_allocated_amount = flt(allocated_amount) * \
+			flt(loan_charge.against_exchange_rate or 1.000)
 		allocated_amount = .000
 	else:
 		loan_charge.allocated_amount = charge.outstanding_amount
+		loan_charge.base_allocated_amount = loan_charge.base_outstanding_amount
 		allocated_amount -= charge.outstanding_amount
-
 	return allocated_amount
 
 def get_total_unallocated(insurance_amount=.000, gps_amount=.000, capital_amount=.000, 

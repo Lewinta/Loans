@@ -16,6 +16,10 @@ frappe.ui.form.on('Income Receipt', {
 		if (!frm.doc.docstatus && frm.doc.loan) {
 			frm.trigger("add_loan_charges_button");
 		}
+
+		if (frm.doc.docstatus > 0 && frm.doc.loan) {
+			frm.trigger("add_back_to_loan_button");
+		}
 	},
 	"onload_post_render": frm => {
 		frm.trigger("set_dynamic_labels");
@@ -142,6 +146,13 @@ frappe.ui.form.on('Income Receipt', {
 			() => frm.trigger("remove_quick_entry_button"),
 			() => frm.add_custom_button(__("Quick Entry"), 
 				event => frm.trigger("show_quick_entry"))
+		]);
+	},
+	"add_back_to_loan_button": frm => {
+		frappe.run_serially([
+			() => frappe.timeout(1),
+			() => frm.add_custom_button(__("Go to Loan"), 
+				event => frappe.set_route("Form", "Loan", frm.doc.loan)),
 		]);
 	},
 	"add_loan_charges_button": frm => {

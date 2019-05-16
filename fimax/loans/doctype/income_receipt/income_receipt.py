@@ -114,7 +114,7 @@ class IncomeReceipt(Document):
 		self.total_outstanding = sum([row.base_outstanding_amount for row in self.income_receipt_items])
 		self.total_paid = sum([row.allocated_amount for row in self.income_receipt_items])
 
-		self.difference_amount = 0.000
+		self.difference_amount = self.total_outstanding - self.total_paid
 
 	def get_income_account_and_currency(self, loan_doc):
 
@@ -143,8 +143,8 @@ class IncomeReceipt(Document):
 			"account": row.against_account,
 			"account_currency": row.against_account_currency,
 			"against": self.party,
-			"debit": row.base_allocated_amount,
-			"debit_in_account_currency": row.allocated_amount,
+			"debit": flt(row.base_allocated_amount, 2),
+			"debit_in_account_currency": flt(row.allocated_amount, 2),
 		})
 
 		# use frappe._dict to make a copy of the dict and don't modify the original
@@ -153,9 +153,9 @@ class IncomeReceipt(Document):
 			"party": self.party,
 			"account": row.account,
 			"account_currency": row.account_currency,
-			"against": row.against_account,
-			"credit": row.base_allocated_amount,
-			"credit_in_account_currency": row.allocated_amount,
+			"against": flt(row.against_account, 2),
+			"credit": flt(row.base_allocated_amount, 2),
+			"credit_in_account_currency": flt(row.allocated_amount, 2),
 		})
 
 		return [debit_gl_entry, credit_gl_entry]
@@ -166,7 +166,7 @@ class IncomeReceipt(Document):
 		gl_map = []
 		for row in self.income_receipt_items:
 			gl_map += self.get_double_matched_entry(row)
-			
+		
 		make_gl_entries(gl_map, cancel=cancel, adv_adj=adv_adj, merge_entries=False)
 
 	def update_loan_charges(self, cancel=False):

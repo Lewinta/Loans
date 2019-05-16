@@ -83,7 +83,7 @@ class LoanCharges(Document):
 		if not self.docstatus == 1.000:
 			frappe.throw(__("Please submit this Loan Charge before updating the outstanding amount!"))
 
-		outstanding_amount = flt(self.total_amount) - flt(self.paid_amount)
+		outstanding_amount = flt(self.total_amount, 2) - flt(self.paid_amount, 2)
 
 		if outstanding_amount < 0.000:
 			frappe.throw(__("Outstanding amount cannot be negative!"))
@@ -113,8 +113,11 @@ class LoanCharges(Document):
 		if flt(self.paid_amount, 2) > flt(self.total_amount, 2):
 			frappe.throw(__("Paid Amount cannot be greater than Total amount!"))
 
+		if flt(self.outstanding_amount, 2) < 0.000 and flt(self.outstanding_amount, 2) > -1:
+			self.outstanding_amount = .000
+
 		if flt(self.outstanding_amount, 2) < 0.000:
-			frappe.throw(__("Outstanding Amount cannot be less than zero!"))
+			frappe.throw(__("Outstanding Amount cannot be less than zero and !".format(self.as_dict())))
 
 	def update_status(self):
 
