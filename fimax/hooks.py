@@ -71,6 +71,24 @@ role_home_page = {
 before_install = "fimax.install.before_install"
 after_install = "fimax.install.after_install"
 
+
+# Installation
+# ------------
+
+fixtures = [
+	{
+		"doctype": "Custom Field",
+		"filters":{
+			"name":(
+				"in",(
+					"Journal Entry-income_receipt",
+				)
+			), 
+		}
+	}
+
+]
+
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config

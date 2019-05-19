@@ -10,6 +10,7 @@ from erpnext.setup.utils import get_exchange_rate
 
 from frappe.utils import flt, cstr, cint, nowdate
 from frappe import _
+from erpnext.accounts.utils import get_company_default
 from fimax.utils import apply_changes_from_quick_income_receipt as apply_changes
 
 class IncomeReceipt(Document):
@@ -24,6 +25,9 @@ class IncomeReceipt(Document):
 	def on_cancel(self):
 		self.make_gl_entries(cancel=True)
 		self.update_loan_charges(cancel=True)
+	
+	def on_trash(self):
+		self.delete_interest_jv()
 		
 	def list_loan_charges(self, loan_charges_list=None, ignore_repayment_date=False):
 		fields = [
@@ -127,9 +131,7 @@ class IncomeReceipt(Document):
 
 		return (income_account, account_currency)
 
-	def get_double_matched_entry(self, row):
-		from erpnext.accounts.utils import get_company_default
-		
+	def get_double_matched_entry(self, row, cancel):
 		differed_interest = frappe.get_value(
 			"Company Defaults",
 			self.company,
@@ -164,20 +166,61 @@ class IncomeReceipt(Document):
 			"credit_in_account_currency": flt(row.allocated_amount, 2),
 		})
 		
+		if cancel:
+			self.cancel_interest_jv(row)
+		else:
+			self.create_interest_jv(row)
+
+		return [debit_gl_entry, credit_gl_entry]
+	
+	def cancel_interest_jv(self, row):		
+		filters = {"income_receipt": self.name}
+
+		for name, in frappe.get_list("Journal Entry", filters, as_list=True):
+			doc = frappe.get_doc("Journal Entry", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+	
+	def delete_interest_jv(self):		
+		filters = {"income_receipt": self.name}
+
+		for name, in frappe.get_list("Journal Entry", filters, as_list=True):
+			doc = frappe.get_doc("Journal Entry", name)
+			if doc.docstatus == 1:
+				doc.cancel()
+			doc.delete()
+
+
+	def create_interest_jv(self, row):
+		differed_interest = frappe.get_value(
+			"Company Defaults",
+			self.company,
+			"include_interest_entry"
+		) or 0
+
 		if differed_interest and row.loan_charges_type == "Interest":
 			interest_debit, interest_credit, series = frappe.get_value(
 				"Company Defaults",
 				self.company,
 				["interest_debit", "interest_credit", "series"]
 				)
-
-			jv = frappe.new_doc("Journal Entry")
 			
+			cost_center = get_company_default(self.company, "cost_center")
+
+			if not cost_center:
+				frappe.throw(
+					"Please choose default Cost Center for {}".format(
+						self.company
+					)
+				)
+			
+			jv = frappe.new_doc("Journal Entry")
+				
 			jv.update({
 				"posting_date": self.posting_date,
 				"naming_series": series if series else "JV-.#####",
 				"company": self.company,
-				"cost_center": get_company_default(self.company, "cost_center"),
+				"income_receipt": self.name,
 				"user_remark": """Interest received from {}
 				 loan grant number {}""".format(row.parent, self.loan) 
 			})
@@ -187,6 +230,7 @@ class IncomeReceipt(Document):
 				"account_currency": row.account_currency,
 				"debit": flt(row.base_allocated_amount, 2),
 				"debit_in_account_currency": flt(row.allocated_amount, 2),
+				"cost_center": cost_center,
 			})
 
 			jv.append("accounts", {
@@ -194,19 +238,18 @@ class IncomeReceipt(Document):
 				"account_currency": row.account_currency,
 				"credit": flt(row.base_allocated_amount, 2),
 				"credit_in_account_currency": flt(row.allocated_amount, 2),
+				"cost_center": cost_center,
 			})
 
 			jv.save()
 			jv.submit()
-
-		return [debit_gl_entry, credit_gl_entry]
 
 	def make_gl_entries(self, cancel=False, adv_adj=False):
 		from erpnext.accounts.general_ledger import make_gl_entries
 
 		gl_map = []
 		for row in self.income_receipt_items:
-			gl_map += self.get_double_matched_entry(row)
+			gl_map += self.get_double_matched_entry(row, cancel)
 		
 		make_gl_entries(gl_map, cancel=cancel, adv_adj=adv_adj, merge_entries=False)
 
