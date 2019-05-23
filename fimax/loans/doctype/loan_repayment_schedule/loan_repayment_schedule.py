@@ -36,10 +36,14 @@ class LoanRepaymentSchedule(Document):
 		if not flt(self.repayment_amount):
 			frappe.throw(_("Missing amount!"))
 
-		if flt(self.paid_amount, 2) > flt(self.repayment_amount, 2):
+		paid_amount = flt(self.paid_amount, 2)
+		repayment_amount = flt(self.repayment_amount, 2)
+		difference = flt(self.repayment_amount, 2) - flt(self.paid_amount, 2)
+		
+		if paid_amount > repayment_amount and difference < -2:
 			frappe.throw(_("Paid Amount cannot be greater than Total amount!"))
 
-		if flt(self.outstanding_amount) < 0.000:
+		if self.outstanding_amount < .00 and self.outstanding_amount < -2:
 			frappe.throw(_("Outstanding Amount cannot be less than zero!"))
 
 	def get_new_loan_charge(self, loan_charges_type, amount):

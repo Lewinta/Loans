@@ -1,46 +1,1194 @@
-[
- {
-  "allow_on_submit": 0, 
-  "bold": 0, 
-  "collapsible": 0, 
-  "collapsible_depends_on": null, 
-  "columns": 0, 
-  "default": null, 
-  "depends_on": null, 
-  "description": null, 
-  "docstatus": 0, 
-  "doctype": "Custom Field", 
-  "dt": "Journal Entry", 
-  "fetch_from": null, 
-  "fetch_if_empty": 0, 
-  "fieldname": "income_receipt", 
-  "fieldtype": "Link", 
-  "hidden": 1, 
-  "ignore_user_permissions": 0, 
-  "ignore_xss_filter": 0, 
-  "in_global_search": 0, 
-  "in_list_view": 0, 
-  "in_standard_filter": 0, 
-  "insert_after": "amended_from", 
-  "label": "Income Receipt", 
-  "modified": "2019-05-19 01:09:15.372001", 
-  "name": "Journal Entry-income_receipt", 
-  "no_copy": 0, 
-  "options": "Income Receipt", 
-  "parent": null, 
-  "parentfield": null, 
-  "parenttype": null, 
-  "permlevel": 0, 
-  "precision": "", 
-  "print_hide": 0, 
-  "print_hide_if_no_value": 0, 
-  "print_width": null, 
-  "read_only": 0, 
-  "report_hide": 0, 
-  "reqd": 0, 
-  "search_index": 0, 
-  "translatable": 0, 
-  "unique": 0, 
-  "width": null
- }
-]
+{%- macro add_head_details() -%}
+<div class="letter-head">{{ letter_head }}</div>
+
+<div class= "yes_letterhead ">
+
+  <div class="row section-break">
+    <div class="col-xs-4 column-break">
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          {% if doc.medico == "DRA GREY  CAMARENA" or doc.medico == "DRA GREY CAMARENA" %}
+          <label>{{_("Institucion")}}</label>
+          </div>
+          <div class="col-xs-10 value text-center" >
+          {{frappe.db.get_value(doc.consulta_tipo, doc.consulta, "institucion")}}
+          {% else %}
+           <label>{{_("Consulta Tipo")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+        {{_(doc.consulta_tipo)}}
+        {%endif%}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Paciente")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{doc.paciente}}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Sexo")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{_(doc.sexo)}}
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-4 column-break">
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Fecha")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{frappe.format_date(doc.fecha).upper()}}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Edad")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{doc.edad}}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Medico")}}</label>
+        </div>
+        <div class="col-xs-10 value text-right" >
+          {{_(doc.medico)}}
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-4 column-break">
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Lab.No.")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{doc.numero_de_laboratorio or "-"}}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Cedula")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{frappe.db.get_value("Paciente", {"name":doc.paciente}, "cedula_pasaporte") or "-"}}
+        </div>
+      </div>
+      <div class="row  data-field custom_height">
+        <div class="col-xs-2" >
+          <label>{{_("Telefono")}}</label>
+        </div>
+        <div class="col-xs-10 value text-center" >
+          {{frappe.db.get_value("Paciente", {"name":doc.paciente}, "telefono") or "-"}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{%-endmacro-%}
+<!-- Hemtologico -->
+{%- if doc.test_hematologico==1 -%}
+
+{{add_head_details()}}
+
+<h3>{{_("Indices Hematologicos")}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>  
+        <th>{{_("Componente")}}</th>
+        <th>{{_("Rango Referencia")}}</th>
+        <th>{{_("Resultado")}}</th>
+        <th>{{_("UDS")}}</th>
+      </tr>
+      {%- for item in doc.indices_hematologicos  -%}
+       {%- if item.resultado and item.resultado is string and  "*" in item.resultado  -%}
+          <tr>
+                  <td style="font-weight:bold"> {{_(item.indice_hematologico)}} </td>
+                  <td style="font-weight:bold"> {{_(item.rango_referencia)}}</td>
+                  <td style="font-weight:bold"> {{_(item.resultado)}}</td>
+                  <td style="font-weight:bold"> {{_(item.uds)}} </td>
+          </tr>
+        {% else %}
+          <tr>
+          <td> {{_(item.indice_hematologico)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+        {%- endif -%}  
+      {%- endfor -%}
+    </tbody>
+  </table>
+
+{%- if doc.recuento_diferencial | count > 0 and doc.otros_hematologia | count == 0 -%}
+<h3>{{_("Recuento Diferencial")}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>  
+        <th>{{_("Componente")}}</th>
+        <th>{{_("Rango Referencia")}}</th>
+        <th>{{_("Resultado")}}</th>
+        <th>{{_("UDS")}}</th>
+      </tr>
+      
+      {%- for item in doc.recuento_diferencial  -%}
+       {%- if item.resultado and  "*" in item.resultado  -%}
+          <tr>
+                  <td style="font-weight:bold"> {{_(item.indice_hematologico)}} </td>
+                  <td style="font-weight:bold"> {{_(item.rango_referencia)}}</td>
+                  <td style="font-weight:bold"> {{_(item.resultado)}}</td>
+                  <td style="font-weight:bold"> {{_(item.uds)}} </td>
+          </tr>
+        {% else %}
+          <tr>
+          <td> {{_(item.indice_hematologico)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+        {%- endif -%}  
+      {%- endfor -%}
+      
+    </tbody>
+  </table>
+{%- elif  doc.recuento_diferencial | count == 0 and  doc.otros_hematologia | count > 0  -%}
+<h3>{{_("Otros")}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>  
+        <th>{{_("Componente")}}</th>
+        <th>{{_("Rango Referencia")}}</th>
+        <th>{{_("Resultado")}}</th>
+        <th>{{_("UDS")}}</th>
+      </tr>
+      
+       {%- for item in doc.otros_hematologia  -%}
+       {%- if item.resultado and  "*" in item.resultado  -%}
+          <tr>
+                  <td style="font-weight:bold"> {{_(item.indice_hematologico)}} </td>
+                  <td style="font-weight:bold"> {{_(item.rango_referencia)}}</td>
+                  <td style="font-weight:bold"> {{_(item.resultado)}}</td>
+                  <td style="font-weight:bold"> {{_(item.uds)}} </td>
+          </tr>
+        {% else %}
+          <tr>
+          <td> {{_(item.indice_hematologico)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+        {%- endif -%}  
+      {%- endfor -%}
+      
+      
+    </tbody>
+  </table>
+{% elif doc.recuento_diferencial | count > 0 and  doc.otros_hematologia | count > 0 %}
+  
+</div>
+<div class="footer hematologia">{{ footer }}</div>
+
+{{add_head_details()}}
+
+  <h3>{{_("Recuento Diferencial")}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>  
+        <th>{{_("Componente")}}</th>
+        <th>{{_("Rango Referencia")}}</th>
+        <th>{{_("Resultado")}}</th>
+        <th>{{_("UDS")}}</th>
+      </tr>
+      
+       {%- for item in doc.recuento_diferencial  -%}
+       {%- if item.resultado and  "*" in item.resultado  -%}
+          <tr>
+                  <td style="font-weight:bold"> {{_(item.indice_hematologico)}} </td>
+                  <td style="font-weight:bold"> {{_(item.rango_referencia)}}</td>
+                  <td style="font-weight:bold"> {{_(item.resultado)}}</td>
+                  <td style="font-weight:bold"> {{_(item.uds)}} </td>
+          </tr>
+        {% else %}
+          <tr>
+          <td> {{_(item.indice_hematologico)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+        {%- endif -%}  
+      {%- endfor -%}
+      
+      
+    </tbody>
+  </table>
+
+  <h3>{{_("Otros Hematologia")}}</h3>
+  <table class="table table-bordered">
+    <tbody>
+      <tr>  
+        <th>{{_("Componente")}}</th>
+        <th>{{_("Rango Referencia")}}</th>
+        <th>{{_("Resultado")}}</th>
+        <th>{{_("UDS")}}</th>
+      </tr>
+      
+       {%- for item in doc.otros_hematologia  -%}
+       {%- if item.resultado and  "*" in item.resultado  -%}
+          <tr>
+                  <td style="font-weight:bold"> {{_(item.indice_hematologico)}} </td>
+                  <td style="font-weight:bold"> {{_(item.rango_referencia)}}</td>
+                  <td style="font-weight:bold"> {{_(item.resultado)}}</td>
+                  <td style="font-weight:bold"> {{_(item.uds)}} </td>
+          </tr>
+        {% else %}
+          <tr>
+          <td> {{_(item.indice_hematologico)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+        {%- endif -%}  
+      {%- endfor -%}
+      
+      
+    </tbody>
+  </table>
+{%endif%}
+</div>
+<div class="footer hematologia">
+{%- if doc.hematologia_chequeados -%}
+<strong class="checked_values">{{_("* Valores chequeados")}}</strong>
+    <div class="fix_footer">{{ footer }}</div>
+{%else%}
+{{ footer }}
+{%endif%}
+</div>
+{% endif %}
+ 
+<!-- Coprologia -->
+
+
+{%- if doc.test_coprologico==1 -%}
+
+{{add_head_details()}}
+
+<h3>{{_("Coprologia")}}</h3>
+{%- if doc.aspecto_fisico|count > 0 -%}
+  <table class="table table-bordered">
+    <tbody>
+      
+      {%- for item in doc.aspecto_fisico  -%}
+        {%- if  item.examen_fisicoquimico -%}
+        <tr>
+          <td> {{_(item.indice_urinario)}}</td>
+          <td> {{_(item.examen_fisicoquimico)}}</td>
+        
+        </tr>
+        {%endif%}
+      {%- endfor -%}
+    </tbody>
+  </table>
+{%endif%}
+<div class="row  data-field custom_height" data-fieldname="parasitos" data-fieldtype="Data">
+      <div class="col-xs-3">  
+        <label>{{_("Parasitos")}}</label>
+      </div>
+      <div class="col-xs-9 value">
+        {{_(doc.parasitos)}}
+      </div>
+</div>
+<div class="row  data-field custom_height" data-fieldname="amebas" data-fieldtype="Data">
+      <div class="col-xs-3">  
+        <label>{{_("Amebas")}}</label>
+      </div>
+      <div class="col-xs-9 value">
+        {{_(doc.amebas)}}
+      </div>
+</div>
+<div class="row  data-field custom_height" data-fieldname="giardia" data-fieldtype="Data">
+      <div class="col-xs-3">  
+        <label>{{_("Giardia")}}</label>
+      </div>
+      <div class="col-xs-9 value">
+        {{_(doc.giardia)}}
+      </div>
+</div>  
+{%if doc.otras_observaciones %}
+<div class="row  data-field custom_height" data-fieldname="giardia" data-fieldtype="Data">
+      <div class="col-xs-3">  
+        <label>{{_("Other Observations")}}</label>
+      </div>
+      <div class="col-xs-9 value">
+        {{_(doc.otras_observaciones)}}
+      </div>
+</div>  
+{%endif%}
+  
+  
+
+</div>
+
+  
+<div class="footer">{{ footer }}</div>
+  
+{% endif %}
+<!-- Indices Urinarios -->
+
+
+{%- if doc.test_urianalisis==1 -%}
+
+
+{{add_head_details()}}
+
+  <div class="row section-break">
+    <div class="col-xs-6 column-break">
+      <h3>{{_("Indices Urinarios")}}</h3>
+      <table class="table table-bordered">
+        <tbody>
+          <tr>  
+            <th>{{_("Indice Urinario")}}</th>
+            <th>{{_("Examen Fisico Quimico")}}</th>
+          </tr>
+          
+          {%- for item in doc.indices_urinarios  -%}
+            <tr>
+            <td> {{_(item.indice_urinario)}}</td>
+            <td> {{_(item.examen_fisicoquimico)}}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    </div>
+    <div class="col-xs-6 column-break">
+      <h3>{{_("Sedimentos Urinarios")}}</h3>
+      <table class="table table-bordered">
+        <tbody>
+          <tr>  
+            <th>{{_("Indice Urinario")}}</th>
+            <th>{{_("Examen Fisico Quimico")}}</th>
+          </tr>
+          
+          {%- for item in doc.sedimentos_urinarios  -%}
+            <tr>
+            <td> {{_(item.indice_urinario)}}</td>
+            <td> {{_(item.examen_fisicoquimico)}}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer coprologia">{{ footer }}</div>
+   
+{% endif %}
+
+
+<!-- Quimmica -->
+{%- if doc.serologia | count > 0 or doc.indices_pruebas | count > 0  -%}  
+ 
+{{add_head_details()}}
+
+  {%- if doc.indices_pruebas | count >0 -%}   
+    
+    <h3>{{_("Indices Quimicos")}}</h3>
+    <table class="table table-bordered">
+          <tbody>
+            <tr>  
+              <th>{{_("Componente")}}</th>
+              <th>{{_("Metodo")}}</th>
+              <th>{{_("Rango Referencia")}}</th>
+              <th>{{_("Resultado")}}</th>
+              <th>{{_("UDS")}}</th>
+            </tr>
+            {%- for item in doc.indices_pruebas[0:18] -%}
+              {%- if item.resultado is not none -%}
+                  {%- if item.resultado and item.resultado is string  and "*" in item.resultado  -%}
+                     <tr>
+                            <td style="font-weight:bold"> {{_(item.prueba)}} </td>
+                            <td style="font-weight:bold"> {{_(item.metodo)}} </td>
+                            <td style="font-weight:bold"> {{_(item.rango_ref)}} </td>
+                            <td style="font-weight:bold"> {{_(item.resultado)}} </td>
+                            <td style="font-weight:bold"> {{_(item.uds) }}  </td>
+                    </tr>
+                  {% else %}
+                      <tr>
+                            <td> {{_(item.prueba)}}</td>
+                            <td> {{_(item.metodo)}}</td>
+                            <td> {{_(item.rango_ref)}}</td>
+                            <td> {{_(item.resultado)}}</td>
+                            <td> {{_(item.uds)}}</td>
+                    </tr>
+
+                  {% endif %}
+
+                 {% endif %} 
+              {% set valores_chequeados = true%}
+            {%- endfor -%}
+          </tbody>
+        </table>
+                {%if doc.quimica_observaciones%}
+    <div class="col-xs-10 value text-center" >
+         <label>{{_("Observaciones")}}</label>
+         <span>{{doc.quimica_observaciones}}</span>
+     </div>    
+  {%endif%}
+   {%- if doc.quimica_chequeados -%}
+    <strong>{{_("* Valores chequeados")}}</strong>
+   {% endif %}    
+  {% endif %} 
+  {%- if doc.indices_pruebas | count > 19 -%}
+  </div>
+
+<div class="footer quimica">{{ footer }}</div>
+</div>
+
+{{add_head_details()}}
+  
+    <h3>{{_("Indices Quimicos")}}</h3>
+    <table class="table table-bordered">
+          <tbody>
+            <tr>  
+              <th>{{_("Componente")}}</th>
+              <th>{{_("Metodo")}}</th>
+              <th>{{_("Rango Referencia")}}</th>
+              <th>{{_("Resultado")}}</th>
+              <th>{{_("UDS")}}</th>
+            </tr>
+        
+            {%- for item in doc.indices_pruebas[18:39] -%}
+              {%- if item.resultado is not none -%}
+                  {%- if item.resultado and  "*" in item.resultado  -%}
+                     <tr>
+                            <td style="font-weight:bold"> {{_(item.prueba)}}    </td>
+                            <td style="font-weight:bold"> {{_(item.metodo)}}    </td>
+                            <td style="font-weight:bold"> {{_(item.rango_ref)}} </td>
+                            <td style="font-weight:bold"> {{_(item.resultado)}} </td>
+                            <td style="font-weight:bold"> {{_(item.uds)}}       </td>
+                    </tr>
+                  {% else %}
+                      <tr>
+                            <td> {{_(item.prueba)}}</td>
+                            <td> {{_(item.metodo)}}</td>
+                            <td> {{_(item.rango_ref)}}</td>
+                            <td> {{_(item.resultado)}}</td>
+                            <td> {{_(item.uds)}}</td>
+                    </tr>
+
+                  {% endif %}
+
+
+           {% endif %} 
+              
+            {%- endfor -%}
+          </tbody>
+        </table>
+{%- if doc.quimica_chequeados -%}
+    <strong>{{_("* Valores chequeados")}}</strong>
+   {% endif %}  
+
+
+  {% endif%}
+  {%- if doc.serologia | count >0 and doc.indices_pruebas|count + doc.serologia | count < 15 -%}    
+    
+    <h3>{{_("Serologia")}}</h3>
+      <table class="table table-bordered">
+          <tbody>
+            <tr>  
+              <th>{{_("Componente")}}</th>
+              <th>{{_("Metodo")}}</th>
+              <th>{{_("Rango Referencia")}}</th>
+              <th>{{_("Resultado")}}</th>
+              <th>{{_("UDS")}}</th>
+            </tr>
+            {%- for item in doc.serologia  -%}
+              {%- if item.resultado and  "*" in item.resultado  -%}
+                     <tr>
+                            <td style="font-weight:bold"> {{_(item.prueba)}} </td>
+                            <td style="font-weight:bold"> {{_(item.metodo)}} </td>
+                            <td style="font-weight:bold"> {{_(item.rango_ref)}} </td>
+                            <td style="font-weight:bold"> {{_(item.resultado)}} </td>
+                            <td style="font-weight:bold"> {{_(item.uds) }}  </td>
+                    </tr>
+              {% else %}
+                  <tr>
+                  <td> {{_(item.prueba)}}</td>
+                  <td> {{_(item.metodo)}}</td>
+                  <td> {{_(item.rango_ref)}}</td>
+                  <td> {{_(item.resultado)}}</td>
+                  <td> {{_(item.uds)}}</td>
+                  </tr>
+              {%endif%}
+              
+            {%- endfor -%}
+          </tbody>
+      </table>
+                {%if doc.quimica_observaciones%}
+    <div class="col-xs-10 value text-center" >
+         <label>{{_("Observaciones2")}}</label>
+         <span>{{doc.quimica_observaciones}}</span>
+     </div>    
+  {%endif%}
+  {% endif %}
+
+  </div>
+<div class="footer quimica">
+    {%- if doc.serologia_chequeados or doc.quimica_chequeados  -%}
+        <strong class="checked_values">{{_("* Valores chequeados")}}</strong>
+            <div class="fix_footer">{{ footer }}</div>
+    {%else%}
+        {{ footer }}
+    {%endif%}
+</div>
+     
+{% endif %}
+
+
+<!-- Serologia -->
+{%- if doc.serologia | count >0 and doc.indices_pruebas|count + doc.serologia | count >= 15 -%}  
+  
+  {{add_head_details()}}
+
+    <h3>{{_("Serologia")}}</h3>
+      <table class="table table-bordered">
+          <tbody>
+            <tr>  
+              <th>{{_("Componente")}}</th>
+              <th>{{_("Metodo")}}</th>
+              <th>{{_("Rango Referencia")}}</th>
+              <th>{{_("Resultado")}}</th>
+              <th>{{_("UDS")}}</th>
+            </tr>
+            {%- for item in doc.serologia  -%}
+              {%- if item.resultado and  "*" in item.resultado  -%}
+                     <tr>
+                            <td style="font-weight:bold"> {{_(item.prueba)}} </td>
+                            <td style="font-weight:bold"> {{_(item.metodo)}} </td>
+                            <td style="font-weight:bold"> {{_(item.rango_ref)}} </td>
+                            <td style="font-weight:bold"> {{_(item.resultado)}} </td>
+                            <td style="font-weight:bold"> {{_(item.uds) }}  </td>
+                    </tr>
+                  {% else %}
+                      <tr>
+                      <td> {{_(item.prueba)}}</td>
+                      <td> {{_(item.metodo)}}</td>
+                      <td> {{_(item.rango_ref)}}</td>
+                      <td> {{_(item.resultado)}}</td>
+                      <td> {{_(item.uds)}}</td>
+                      </tr>
+                {%endif%}
+            {%- endfor -%}
+          </tbody>
+      </table>
+  </div>
+<div class="footer serologia">
+{%- if doc.serologia_chequeados -%}
+<strong class="checked_values">{{_("* Valores chequeados")}}</strong>
+    <div class="fix_footer">{{ footer }}</div>
+{%else%}
+{{ footer }}
+{%endif%}
+
+</div>
+     
+{% endif %}
+
+<!-- Microbiologia -->
+
+{%- if doc.test_microbiologia==1 -%}
+  {{add_head_details()}}
+
+  <h3>{{_("Microbiologia")}}</h3>
+  <div class="row section-break">
+    <div class="col-xs-12 column-break">
+      <div class="row  data-field custom_height">
+        <div class="col-xs-5">
+          <!-- <label>{{_(doc.tipo_microbiologia)}}</label> -->
+          <label>{{_("Cultivo de:")}}</label>
+        </div>
+        <div class="col-xs-7 value">
+          {{_(doc.tipo_cultivo)}}
+        </div>
+      </div>
+      {% if doc.organismo != None and doc.organismo != "" and doc.organismo != "NINGUNO" %}
+      <div class="row  data-field custom_height">
+        <div class="col-xs-5">
+          <label>{{_("Organismo")}}</label>
+        </div>
+        <div class="col-xs-7 value">
+          {{_(doc.organismo)}}
+        </div>
+      </div>
+      {% endif %}
+      <div class="row  data-field ">
+        <div class="col-xs-5">
+          <label>{{_("Resultado")}}</label>
+        </div>
+        <div class="col-xs-7 value">
+          {{_(doc.resultado_cultivo)}}
+        </div>
+      </div>
+      
+    </div>
+  </div>
+{% if doc.organismo != None and doc.organismo != "" and doc.organismo != "NINGUNO" %}
+  {% if doc.tipo_cultivo == "SECRECION VAGINAL" %}
+  <div class="row section-break"> 
+    <div class="col-xs-12 column-break">
+      <table class="table table-bordered">
+        <tbody>
+            <tr>
+              <th>{{_("SEDIMENTO")}}</th>
+              <th>{{_("RESULTADO")}}</th>
+          {%- for item in doc.bacteriologia_vaginal  -%}
+            </tr>
+            <tr>
+            <td> {{_(item.valor)}}</td>
+            <td> {{_(item.resultado)}}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+    {% if doc.antibiogramas is defined  %}
+      {% if doc.antibiogramas | count >0 %}
+  
+  <div class="row section-break"> 
+    <div class="col-xs-12 column-break">
+      <h4 class="text-center">{{_("ANTIBIOGRAMA CON CONCENTRACION MINIMA INHIBITORIA (MIC) mcg/ml")}}</h4>
+      <table class="table table-bordered">
+        <tbody>
+            <tr>
+              <th>{{_("ANTIBIOTICO")}}</th>
+              <th>{{_("MIC (MCG/ML)")}}</th>
+              <th>{{_("INTERPRETACION")}}</th>
+          {%- for item in doc.antibiogramas  -%}
+            </tr>
+            <tr>
+            <td> {{_(item.valor)}}</td>
+            <td> {{_(item.resultado)}}</td>
+            <td> {{_(item.interpretacion)}}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+        {% endif %}
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  
+
+</div> 
+  
+    <div class="footer">{{ footer }}</div> 
+{% endif %}
+
+<!-- Antibiogramas -->
+
+{% if doc.organismo != None and doc.organismo != "" and doc.organismo != "NINGUNO" and doc.tipo_cultivo == "SECRECION VAGINAL" %}
+  
+  {{add_head_details()}}
+
+  {% if doc.antibiogramas is defined  %}
+  {% if doc.antibiogramas | count >0 %}
+</br>
+</br>
+  <h4 class="text-center">{{_("ANTIBIOGRAMA CON CONCENTRACION MINIMA INHIBITORIA (MIC) mcg/ml")}}</h4>
+  
+  <div class="row section-break"> 
+    <div class="col-xs-12 column-break">
+      <table class="table table-bordered">
+        <tbody>
+            <tr>
+              <th>{{_("ANTIBIOTICO")}}</th>
+              <th>{{_("MIC (MCG/ML)")}}</th>
+              <th>{{_("INTERPRETACION")}}</th>
+          {%- for item in doc.antibiogramas  -%}
+            </tr>
+            <tr>
+            <td> {{item.valor}}</td>
+            <td> {{_(item.resultado)}}</td>
+            <td> {{_(item.interpretacion)}}</td>
+            </tr>
+          {%- endfor -%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% endif %}
+  {% endif %}
+
+</div> 
+  
+    <div class="footer microbiologia">{{ footer }}</div> 
+{% endif %}
+
+<!-- Inmunodiagnosticos -->
+{%- if doc.test_inmunodiagnosticos -%}
+  {{add_head_details()}}
+
+
+{%- if doc.inmunodiagnosticos | count >0 -%}    
+<h3>{{_("Inmunodiagnosticos")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Diagnostico")}}</th>
+          <th>{{_("Metodo")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.inmunodiagnosticos  -%}
+        {%- if item.resultado   -%}
+          <tr>
+             {%- if item.resultado and  item.resultado is string and "*" in item.resultado  -%}
+                <td style="font-weight:bold"> {{_(item.prueba)}} </td>
+                <td style="font-weight:bold"> {{_(item.metodo)}} </td>
+                <td style="font-weight:bold"> {{_(item.rango_ref)}} </td>
+                <td style="font-weight:bold"> {{_(item.resultado)}} </td>
+                <td style="font-weight:bold"> {{_(item.uds) }}  </td>
+
+              {% else %}
+                      <td> {{_(item.prueba)}}</td>
+                      <td> {{_(item.metodo)}}</td>
+                      <td> {{_(item.rango_ref)}}</td>
+                      <td> {{_(item.resultado)}}</td>
+                      <td> {{_(item.uds)}}</td>
+                {%endif%}
+          </tr>
+          
+        {%- endif -%}
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+{%- if doc.tipificacion | count >0 -%}    
+<h3>{{_("Tipificacion")}}</h3>
+  <table class="table table-bordered">
+      <tbody>
+        
+        {%- for item in doc.tipificacion  -%}
+          <tr>
+          <td> {{_(item.prueba)}}</td>
+          <td> {{_(item.metodo)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+  </table>
+{% endif %} 
+
+</div>
+   <div class="footer inmunodiagnosticos">
+        {%- if doc.inmunodiagnostico_chequeados -%}
+            <strong class="checked_values">{{_("* Valores chequeados")}}</strong>
+            <div class="fix_footer">{{ footer }}</div>
+        {%else%}
+            {{ footer }}
+        {%endif%}   
+   </div>
+     
+{% endif %}
+<!-- Hormonas -->
+{%- if doc.test_hormonas==1 -%}
+  
+  {{add_head_details()}}
+
+
+{%- if doc.hormonas| count >0 -%}   
+<h3>{{_("Hormonas")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Hormona")}}</th>
+          <th>{{_("Metodo")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.hormonas-%}
+          <tr>
+          <td> {{_(item.prueba)}}</td>
+          <td> {{_(item.metodo)}}</td>
+          <td> {{_(item.rango_ref)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+</div>
+    <div class="footer hormonas">{{ footer }}</div> 
+{% endif %}
+
+<!-- Espermatograma -->
+
+{%- if doc.test_espermatograma==1 -%}
+
+{{add_head_details()}}
+
+
+  {%- if doc.examen_macroscopico| count >0 -%}   
+<h3>{{_("Examen Macroscopico")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.examen_macroscopico-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_ref)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %}
+{%- if doc.examen_microscopico| count >0 -%}   
+<h3>{{_("Examen Microscopico")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.examen_microscopico-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+  
+</div>
+    <div class="footer Espermatogramas">{{ footer }}</div> 
+{% endif %}
+
+<!-- Espermatograma 2 -->
+
+{%- if doc.test_espermatograma==1 -%}
+
+{{add_head_details()}}
+
+
+  {%- if doc.evaluacion_mortalidad| count >0 -%}   
+<h3>{{_("Evaluacion Motilidad")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.evaluacion_mortalidad-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_ref)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %}
+{%- if doc.concentracion| count >0 -%}   
+<h3>{{_("Concentracion")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.concentracion-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+  
+</div>
+    <div class="footer Espermatogramas">{{ footer }}</div> 
+{% endif %}
+
+<!-- Espermatograma 3-->
+
+{%- if doc.test_espermatograma==1 -%}
+
+{{add_head_details()}}
+
+
+  {%- if doc.morfologia_espermatica| count >0 -%}   
+<h3>{{_("Morfologia Espermatica")}}</h3>
+<table class="table table-bordered">
+      <tbody>
+         <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.morfologia_espermatica-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.resultado)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %}
+  
+</div>
+    <div class="footer Espermatogramas">{{ footer }}</div> 
+{% endif %}
+
+<!-- Anexos -->
+
+{%- if doc.test_anexos==1 -%}
+
+{{add_head_details()}}
+
+<h3>{{_("ANEXOS")}}</h3>
+  
+{%- if doc.prb_000000065| count >0 -%}    
+<strong>{{_("TSH")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Metodo")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("UDS")}}</th>
+          
+        </tr>
+    
+        {%- for item in doc.prb_000000065-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.metodo)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+  
+{%- if doc.prb_000000177| count >0 -%}    
+<strong>{{_("FSH")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Metodo")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("UDS")}}</th>
+          
+        </tr>
+    
+        {%- for item in doc.prb_000000177-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.metodo)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %}   
+
+{%- if doc.prb_000000240| count >0 -%}    
+<strong>{{_("LH")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Metodo")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("UDS")}}</th>
+          
+        </tr>
+    
+        {%- for item in doc.prb_000000240-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.metodo)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+{%- if doc.prb_000000120| count >0 -%}    
+<strong>{{_("INTERVALOS DE REFERENCIA DE BHCG")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("EDAD DE GESTACION")}}</th>
+          <th>{{_("VALOR ESPERADO")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.prb_000000120-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+{%- if doc.prb_000000270| count >0 -%}    
+<strong>{{_("INTERPRETACION DE RESUTADOS: C.TRACHOMATIS / N. GONORRHOEAE")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Resultado")}}</th>
+          <th>{{_("Interpretacion")}}</th>
+        </tr>
+    
+        {%- for item in doc.prb_000000270-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+{%- if doc.prb_000000078| count >0 -%}    
+<strong>{{_("TROPONINA(CUANTITATIVA)")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.prb_000000078-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+{%- if doc.prb_000000263| count >0 -%}    
+<strong>{{_("ANTIGENO H. PYLORI")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+        </tr>
+    
+        {%- for item in doc.prb_000000263-%}
+          <tr>
+          <td> {{_(item.descripcion)}}</td>
+          <td> {{_(item.rango_referencia)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+{%- if doc.prb_000000162| count >0 -%}    
+<strong>{{_("INTERVALOS DE REFERENCIA ESTRADIOL")}}</strong>
+<table class="table table-bordered">
+      <tbody>
+        <tr>  
+          <th>{{_("Descripcion")}}</th>
+          <th>{{_("Rango Referencia")}}</th>
+          <th>{{_("UDS")}}</th>
+        </tr>
+    
+        {%- for item in doc.prb_000000162-%}
+          <tr>
+          {%-if item.descripcion == "Masculino" or item.descripcion == "Femenino"  -%}
+            <td> <b>{{_(item.descripcion)}}</b></td>
+          {%else%}
+            <td> {{_(item.descripcion)}}</td>
+          {%endif%}  
+          <td> {{_(item.rango_referencia)}}</td>
+          <td> {{_(item.uds)}}</td>
+          </tr>
+          
+        {%- endfor -%}
+      </tbody>
+    </table>
+{% endif %} 
+
+{%- if doc.otros_anexos == 1 -%}
+  <strong>{{_(doc.otros_title)}}</strong>
+  <pre>{{_(doc.otros_descripcion)}}</pre>
+{% endif %}    
+
+</div>
+
+</div>
+    <div class="footer">{{ footer }}</div>      
+
+{% endif %}
+
+
