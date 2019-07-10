@@ -4,14 +4,14 @@
 frappe.ui.form.on('Amortization Tool', {
 	"refresh": (frm) => {
 		let event_list = ["update_interest_rate_label",
-			"add_custom_buttons", "show_menu"
+			"add_custom_buttons", "show_menu", "is_quick"
 		];
 
 		$.map(event_list, (event) => frm.trigger(event));
 	},
 	"loan_type": (frm) => {
 		if (!frm.doc.loan_type) { return 0; }
-
+		frm.trigger("is_quick");
 		frappe.db.get_value(frm.fields_dict.loan_type.df.options, frm.doc.loan_type, "*")
 			.done((response) => {
 				let loan_type = response.message;
@@ -39,6 +39,12 @@ frappe.ui.form.on('Amortization Tool', {
 				frm.trigger("update_interest_rate_label");
 				frm.refresh_fields();
 			});
+	},
+	"is_quick": (frm) => {
+		const {quick_loan} = frm.doc; 
+		
+		frm.set_value("repayment_periods", quick_loan ? quick_loan : 36);
+		frm.toggle_enable("repayment_periods", !quick_loan);
 	},
 	"show_menu": (frm) => {
 		frm.page.show_menu();	
