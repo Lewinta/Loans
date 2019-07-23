@@ -39,6 +39,9 @@ def biweekly(date, idx):
 def monthly(date, idx):
     return add_to_date(date, months=cint(idx))
 
+def eom(date, idx):
+    return add_to_date(date, days=cint(idx) * 60)
+
 def quartely(date, idx):
     return add_to_date(date, months=cint(idx) * 3)
 

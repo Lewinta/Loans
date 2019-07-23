@@ -31,7 +31,7 @@ frappe.ui.form.on('Amortization Tool', {
 				], fieldname => frm.doc[fieldname] = loan_type[fieldname]);
 
 				let repayment_interest_rate = flt(loan_type["interest_rate"]) /
-					fimax.utils.frequency_in_years(frm.doc.repayment_frequency);
+					freq_in_years(frm.doc.repayment_frequency);
 
 				frm.doc["interest_rate"] = repayment_interest_rate;
 				
@@ -41,9 +41,14 @@ frappe.ui.form.on('Amortization Tool', {
 			});
 	},
 	"is_quick": (frm) => {
-		const {quick_loan} = frm.doc; 
+		const {quick_loan, repayment_periods} = frm.doc; 
 		
-		frm.set_value("repayment_periods", quick_loan ? quick_loan : 36);
+		if (quick_loan)
+			frm.set_value("repayment_periods", 1);
+
+		if (!quick_loan && !repayment_periods)
+			frm.set_value("repayment_periods", 36);
+
 		frm.toggle_enable("repayment_periods", !quick_loan);
 	},
 	"show_menu": (frm) => {
@@ -131,10 +136,10 @@ frappe.ui.form.on('Amortization Tool', {
 		frappe.db.get_value(frm.fields_dict.loan_type.df.options, frm.doc.loan_type, "interest_rate")
 			.done((response) => {
 				let data = response.message;
-
+				console.log(frm.doc.repayment_frequency);
 				if (data) {
 					let repayment_interest_rate = flt(data["interest_rate"]) /
-						fimax.utils.frequency_in_years(frm.doc.repayment_frequency);
+						freq_in_years(frm.doc.repayment_frequency);
 
 					frm.set_value("interest_rate", repayment_interest_rate);
 				} 
@@ -244,3 +249,17 @@ frappe.ui.form.on('Amortization Tool', {
 		}).fail((exec) => frappe.msgprint(__("There was an error while creating the Loan Application")));
 	},
 });
+
+function freq_in_years (frequency) {
+	frequency = frequency.replace(/ /g, "_"); 
+	return {
+		"daily": 365,
+		"weekly": 52,
+		"biweekly": 26,
+		"monthly": 12,
+		"eom": 6,
+		"quartely": 4,
+		"half-yearly": 2,
+		"yearly": 1
+	}[new String(frequency).toLocaleLowerCase()];
+}

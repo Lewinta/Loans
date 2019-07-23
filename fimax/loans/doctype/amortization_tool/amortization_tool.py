@@ -8,7 +8,7 @@ from frappe.model.document import Document
 from fimax.api import rate_to_decimal as dec
 from fimax import simple, compound
 from frappe.utils import flt, cint, cstr, nowdate
-from fimax.utils import daily, weekly, biweekly, monthly, quartely, half_yearly, yearly
+from fimax.utils import daily, weekly, biweekly, monthly, eom, quartely, half_yearly, yearly
 from frappe import _ as __
 
 class AmortizationTool(Document):
@@ -83,6 +83,7 @@ class AmortizationTool(Document):
 				"Weekly": weekly,
 				"BiWeekly": biweekly,
 				"Monthly": monthly,
+				"EOM": eom,
 				"Quartely": quartely,
 				"Half-Yearly": half_yearly,
 				"Yearly": yearly

@@ -100,13 +100,25 @@ def create_loan_charges_fines_for_(company):
 		if time_to_run and not cstr(time_to_run) <= nowdate():
 			continue
 
-		amount = late_payment_fee_rate * total_amount  \
-			if late_payment_fee_on_total_amount \
-			else outstanding_amount
+		if loan_repayment.parenttype == "Loan":
+			loan = get_doc(
+				loan_repayment.parenttype,
+				loan_repayment.parent
+			)
 
-		if not hasattr(loan_repayment,
-					   "get_new_loan_charge"):
+		if loan.is_quick_loan():
+			amount = loan.interest_rate / 100 * total_amount  \
+				if late_payment_fee_on_total_amount \
+				else outstanding_amount
+		else:
+			amount = late_payment_fee_rate * total_amount  \
+				if late_payment_fee_on_total_amount \
+				else outstanding_amount
+
+
+		if not hasattr(loan_repayment, "get_new_loan_charge"):
 			continue
+
 
 		loan_charges = loan_repayment.get_new_loan_charge(
 			"Late Payment Fee", amount)
@@ -119,9 +131,7 @@ def create_loan_charges_fines_for_(company):
 		loan_repayment.db_update()
 
 		if loan_repayment.parenttype == "Loan":
-			update_loan_record(
-					get_doc(loan_repayment.parenttype,
-							loan_repayment.parent))
+			update_loan_record(loan)
 
 		loan_charges.submit()
 

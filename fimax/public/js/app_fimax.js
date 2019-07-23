@@ -56,11 +56,13 @@ $.extend(fimax.utils, {
 		return flt(value) / flt(100.000);
 	},
 	"frequency_in_years": (frequency) => {
+		frequency = frequency.replace(/ /g, "_"); 
 		return {
 			"daily": 365,
 			"weekly": 52,
 			"biweekly": 26,
 			"monthly": 12,
+			"every_other_month": 6,
 			"quartely": 4,
 			"half-yearly": 2,
 			"yearly": 1

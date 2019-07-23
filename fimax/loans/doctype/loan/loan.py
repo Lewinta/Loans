@@ -17,7 +17,7 @@ from fimax import compound
 from fimax.utils import delete_doc
 
 from frappe.utils import flt, cint, cstr
-from fimax.utils import daily, weekly, biweekly, monthly, quartely, half_yearly, yearly
+from fimax.utils import daily, weekly, biweekly, monthly, eom, quartely, half_yearly, yearly
 from frappe import _ as __
 
 class Loan(Document):
@@ -89,6 +89,13 @@ class Loan(Document):
 			record = frappe.get_doc("Loan Record", self.name)
 			delete_doc(record)
 
+	def is_quick_loan(self):
+		return True if frappe.get_value(
+			"Custom Loan", 
+			self.loan_type,
+			"quick_loan"
+		) else False
+
 	def make_loan(self):
 		if self.loan_application:
 			loan_appl = frappe.get_doc(self.meta.get_field("loan_application").options,
@@ -148,6 +155,7 @@ class Loan(Document):
 				"Daily": daily,
 				"Weekly": weekly,
 				"BiWeekly": biweekly,
+				"EOM": eom,
 				"Monthly": monthly,
 				"Quartely": quartely,
 				"Half-Yearly": half_yearly,
