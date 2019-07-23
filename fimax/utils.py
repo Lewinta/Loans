@@ -39,6 +39,9 @@ def biweekly(date, idx):
 def monthly(date, idx):
     return add_to_date(date, months=cint(idx))
 
+def every_other_month(date, idx):
+    return add_to_date(date, months=cint(idx) + 1)
+
 def quartely(date, idx):
     return add_to_date(date, months=cint(idx) * 3)
 
