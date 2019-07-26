@@ -107,9 +107,9 @@ def create_loan_charges_fines_for_(company):
 			)
 
 		if loan.is_quick_loan():
-			amount = loan.interest_rate / 100 * total_amount  \
+			amount = loan.interest_rate / 100.0 * total_amount  \
 				if late_payment_fee_on_total_amount \
-				else outstanding_amount
+				else loan.interest_rate / 100.0 * outstanding_amount 
 		else:
 			amount = late_payment_fee_rate * total_amount  \
 				if late_payment_fee_on_total_amount \
