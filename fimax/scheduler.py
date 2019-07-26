@@ -1,8 +1,8 @@
 import frappe
-
+from math import ceil
 from frappe.utils import cint, flt, cstr
-from frappe.utils import nowdate, add_days, add_months
-
+from frappe.utils import nowdate, add_days, add_months, date_diff
+from fimax.api import freq_to_days
 from frappe import get_doc, db, render_template, _
 
 
@@ -119,21 +119,27 @@ def create_loan_charges_fines_for_(company):
 		if not hasattr(loan_repayment, "get_new_loan_charge"):
 			continue
 
+		# date diff in days
+		date_dif = date_diff(due_date, loan_repayment.repayment_date)
+		due_payments = int(ceil(date_dif / freq_to_days(loan.repayment_frequency)))
 
-		loan_charges = loan_repayment.get_new_loan_charge(
-			"Late Payment Fee", amount)
+		charge_type = "Interest" if loan.is_quick_loan() else "Late Payment Fee"
 
-		if not amount:
-			continue
+		for i in range(0, due_payments if not loan_repayment.last_run else 1):
+			loan_charges = loan_repayment.get_new_loan_charge(
+			charge_type , amount)
 
-		loan_repayment.last_run = nowdate()
+			if not amount:
+				continue
 
-		loan_repayment.db_update()
+			loan_repayment.last_run = nowdate()
 
-		if loan_repayment.parenttype == "Loan":
-			update_loan_record(loan)
+			loan_repayment.db_update()
 
-		loan_charges.submit()
+			if loan_repayment.parenttype == "Loan":
+				update_loan_record(loan)
+
+			loan_charges.submit()
 
 
 def get_valid_loan_charges():

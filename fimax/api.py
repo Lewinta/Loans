@@ -6,6 +6,20 @@ def rate_to_decimal(rate):
 	"""Converts from percentage format to decimal"""
 	return flt(rate) / flt(100.000)
 
+def freq_to_days(freq):
+	obj = {
+	"Daily": 1,
+	"Weekly": 7,
+	"BiWeekly": 14,
+	"Monthly": 30,
+	"EOM": 60,
+	"Quartely": 121,
+	"Half-Yearly": 182,
+	"Yearly": 363,
+	}
+
+	return obj.get(freq)
+
 @frappe.whitelist()
 def create_loan_from_appl(doc):
 	"""Creates a Loan taking a Loan Application as a base
