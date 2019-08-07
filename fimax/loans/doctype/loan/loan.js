@@ -14,6 +14,9 @@ frappe.ui.form.on('Loan', {
 		if (frm.is_new()) {
 			frm.trigger("set_defaults");
 		}
+		else{
+			frm.trigger("toggle_last_run");
+		}
 	},
 	"onload": (frm) => {
 		let event_list = [
@@ -47,6 +50,22 @@ frappe.ui.form.on('Loan', {
 		if (frm.doc.currency != frm.doc.company_currency && frm.doc.exchange_rate == 1.000) {
 			frappe.msgprint(__("Different currencies have been detected and exchange rate of 1"));
 		}
+	},
+	"toggle_last_run": (frm) => {
+		// This will allow system managers to change the last run option
+		if (frappe.user.has_role("System Manager"))
+			return
+
+		const {filter_dict} = frappe.utils;
+		const {fields_dict} = frm;
+		const rows = fields_dict["loan_schedule"].grid.grid_rows;
+		const field = {"fieldname": "last_run"}; 
+		
+		$.map(rows, row => {
+			filter_dict( row.docfields, field )[0].read_only = true;
+		});
+
+		refresh_field("loan_schedule");
 	},
 	"set_queries": (frm) => {
 		let event_list = [
