@@ -33,6 +33,7 @@ class LoanRepaymentSchedule(Document):
 			self.status = "Paid"
 
 	def validate_amounts(self):
+		loan = frappe.get_doc("Loan", self.parent)
 		if not flt(self.repayment_amount):
 			frappe.throw(_("Missing amount!"))
 
@@ -40,7 +41,7 @@ class LoanRepaymentSchedule(Document):
 		repayment_amount = flt(self.repayment_amount, 2)
 		difference = flt(self.repayment_amount, 2) - flt(self.paid_amount, 2)
 		
-		if paid_amount > repayment_amount and difference < -2:
+		if paid_amount > repayment_amount and difference < -2 and not loan.is_quick_loan():
 			frappe.throw(_("Paid Amount cannot be greater than Total amount!"))
 
 		if self.outstanding_amount < .00 and self.outstanding_amount < -2:
