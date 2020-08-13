@@ -1,0 +1,33 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+<<<<<<< HEAD
+recursive-include fm *.css
+recursive-include fm *.csv
+recursive-include fm *.html
+recursive-include fm *.ico
+recursive-include fm *.js
+recursive-include fm *.json
+recursive-include fm *.md
+recursive-include fm *.png
+recursive-include fm *.py
+recursive-include fm *.svg
+recursive-include fm *.txt
+recursive-exclude fm *.pyc
+=======
+recursive-include fimax *.css
+recursive-include fimax *.csv
+recursive-include fimax *.html
+recursive-include fimax *.ico
+recursive-include fimax *.js
+recursive-include fimax *.json
+recursive-include fimax *.md
+recursive-include fimax *.png
+recursive-include fimax *.py
+recursive-include fimax *.svg
+recursive-include fimax *.txt
+recursive-exclude fimax *.pyc
+>>>>>>> d951d1165f3f564b4f664e87b11a5a6eea6dcd6d
