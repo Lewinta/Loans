@@ -3,21 +3,22 @@ from setuptools import setup, find_packages
 from pip.req import parse_requirements
 import re, ast
 
-# get version from __version__ variable in fm/__init__.py
+# get version from __version__ variable in fimax/__init__.py
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('fm/__init__.py', 'rb') as f:
+with open('fimax/__init__.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(
         f.read().decode('utf-8')).group(1)))
 
 requirements = parse_requirements("requirements.txt", session="")
 
 setup(
-	name='fm',
+	name='fimax',
 	version=version,
-	description='This is a Loan Managment application intented to ease the whole process of lending money to customers.',
-	author='Soldeva, SRL',
-	author_email='servicios@soldeva.com',
+	description='Manage your finances with the best manager',
+	author='Yefri Tavarez',
+	author_email='yefritavarez@gmail.com',
+
 	packages=find_packages(),
 	zip_safe=False,
 	include_package_data=True,
