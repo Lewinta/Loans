@@ -18,7 +18,7 @@ class BranchOffice(Document):
 			permission.allow = "Branch Office"
 			permission.for_value = self.name
 			permission.full_name = user.full_name
-			permission.save()
+			permission.save(ignore_permissions=True)
 			self.add_comment("Updated", "<span> agregó el usuario {} a esta sucursal! </span>".format(user.name), frappe.session.user)
 			self.refresh_users()
 			
@@ -43,7 +43,7 @@ class BranchOffice(Document):
 			if collection_user and user.user == collection_user[0].user:
 				user.collection_user = 1
 			self.append("users",user)
-		self.save()
+		self.save(ignore_permissions=True)
 
 
 

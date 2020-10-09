@@ -16,9 +16,14 @@ def get_columns():
 		"Cliente:Data:250",
 		"Prestamo:Link/Loan:90",
 		"Pagare:Data:80",
-		"Monto Pagado:Currency:110",
+		"Capital:Currency:100",
+		"Mora:Currency:100",
+		"Seguro:Currency:100",
+		"Descuentos:Currency:100",
+		"Gastos Legal:Currency:120",
+		"Total:Currency:120",
 		"Tipo de Pago:Data:100",
-		"Referencia:Data:150",
+		"Referencia:Data:200",
 		"Sucursal:Data:120",
 	]
 
@@ -37,12 +42,51 @@ def get_data(filters):
 			`tabLoan`.customer,
 			`tabJournal Entry`.loan,
 			`tabJournal Entry`.repayment_no,
+			SUM(
+				IF(
+					`tabJournal Entry Account`.repayment_field = 'capital',
+					`tabJournal Entry Account`.credit_in_account_currency,
+					0
+				)
+			) capital,
+			SUM(
+				IF(
+					`tabJournal Entry Account`.repayment_field = 'fine',
+					`tabJournal Entry Account`.credit_in_account_currency,
+					0
+				)
+			) fine,
+			SUM(
+				IF(
+					`tabJournal Entry Account`.repayment_field = 'insurance',
+					`tabJournal Entry Account`.credit_in_account_currency,
+					0
+				)
+			) insurance,
+			SUM(
+				IF(
+					`tabJournal Entry Account`.repayment_field = 'other_discounts',
+					`tabJournal Entry Account`.debit_in_account_currency,
+					0
+				)
+			) other_discounts,
+			SUM(
+				IF(
+					`tabJournal Entry Account`.repayment_field = 'gastos_recuperacion',
+					`tabJournal Entry Account`.credit_in_account_currency,
+					0
+				)
+			) gastos_recuperacion,
 			`tabJournal Entry`.total_debit,
 			`tabJournal Entry`.voucher_type,
 			`tabJournal Entry`.cheque_no,
 			`tabJournal Entry`.branch_office
 		FROM 
 			`tabJournal Entry`
+		JOIN
+			`tabJournal Entry Account`
+		ON
+			`tabJournal Entry`.name = `tabJournal Entry Account`.parent
 		LEFT JOIN
 			`tabLoan`
 		ON
@@ -57,6 +101,8 @@ def get_data(filters):
 			`tabJournal Entry`.posting_date <= '%s'
 		AND
 			`tabJournal Entry`.docstatus = 1
+		GROUP BY 
+			`tabJournal Entry`.name
 		
 		
 

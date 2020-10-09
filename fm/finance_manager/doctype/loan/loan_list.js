@@ -33,7 +33,7 @@ frappe.listview_settings['Loan'] = {
 	"get_indicator": (doc) => {
 		if(doc.status === "Sanctioned") {
 			return ["Aprobado", "orange", "status,=,Sanctioned"]
-		} else if (["Recuperado", "Pending"].includes(doc.status)) {
+		} else if (["Recuperado", "Pending",].includes(doc.status)) {
 			return ["Recuperado", "purple", "status,=,Recuperado"]
 		} else if (doc.status === "Partially Disbursed") {
 			return ["Desembolsado Parcialmente", "darkgrey", "status,=,Partially Disbursed"]
@@ -43,10 +43,14 @@ frappe.listview_settings['Loan'] = {
 			return ["Completado", "green", "status,=,Repaid/Closed"]
 		}else if(doc.status === "Legal") {
 			return ["Legal", "red", "status,=,Legal"]
+		}else if(doc.status === "Disponible") {
+			return ["Disponible", "red", "status,=,Disponible"]
 		}else if(doc.status === "Perdida Total") {
 			return ["Perdida Total", "red", "status,=,Perdida Total"]
 		}else if(doc.status === "Taller") {
 			return ["Taller", "purple", "status,=,Taller"]
+		}else if(doc.status === "Incautado") {
+			return ["Incautado", "purple", "status,=,Incautado"]
 		}
 	}
 }

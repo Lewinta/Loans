@@ -23,7 +23,7 @@ def get_next_repayment_schedule(chasis_no):
 	fecha_pagare = pagare.fecha
 
 	return fecha_pagare.strftime('%Y-%m-%d')
-	
+
 @frappe.whitelist()
 def add_insurance_to_loan(chasis_no, total_insurance):
 	doc = frappe.get_doc("Loan", { "asset": chasis_no, "status": "Fully Disbursed" })
@@ -146,7 +146,8 @@ def sync_row(loan, idx, date=None):
 	def calculate_fine(rpmt, curdate):
 		rpmt = frappe._dict(rpmt)
 		fine_rate = frappe.db.get_value("Loan", rpmt.parent, "fine") / 100.0
-		due_date = str(add_days(rpmt.fecha, 5))
+		grace_days = frappe.db.get_single_value("FM Configuration", "grace_days")
+		due_date = str(add_days(rpmt.fecha, int(grace_days)))
 		if curdate > nowdate():
 			return rpmt
 		print("{} {}".format(curdate, rpmt.fecha))
@@ -202,7 +203,8 @@ def sync_row(loan, idx, date=None):
 	today = nowdate() if not date else date
 
 	rpmt = frappe._dict(get_base_rpmt(row))
-	due_date = from_date = curdate = str(add_days(row.fecha, 5))
+	grace_days = frappe.db.get_single_value("FM Configuration", "grace_days")
+	due_date = from_date = curdate = str(add_days(row.fecha, int(grace_days)))
 	vencimientos = int(ceil(date_diff(today, row.fecha)/30)) + 1
 
 	# frappe.errprint("Initial:\n\t")
@@ -285,3 +287,15 @@ def sync_row(loan, idx, date=None):
 	row.update_status()
 	row.db_update()
 	frappe.db.commit()
+
+def get_month_end(date):
+	from datetime import datetime
+	from calendar import monthrange
+
+	return date.replace(day = monthrange(date.year, date.month)[1])
+
+def get_month_start(date):
+	from datetime import datetime
+	from calendar import monthrange
+
+	return date.replace(day = monthrange(date.year, date.month)[0])

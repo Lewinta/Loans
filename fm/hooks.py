@@ -41,7 +41,7 @@ app_include_js = [
 # include js in doctype views
 doctype_js = {
 	"Journal Entry" : "public/js/journal_entry.js",
-	"Poliza de Seguro" : "public/js/poliza_de_seguro.js",
+	# "Poliza de Seguro" : "public/js/poliza_de_seguro.js",
 	"Fiadores" : "public/js/fiadores.js",
 	"Customer" : "public/js/customer.js",
 	"Customize Form" : "public/js/customize_form.js",

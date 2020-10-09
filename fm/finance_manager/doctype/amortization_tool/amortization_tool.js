@@ -65,7 +65,7 @@ frappe.ui.form.on('Amortization Tool', {
 	validate_mandatory: function(frm) {
 		var mandatory_fields = [
 			"gross_loan_amount",
-			"rate_of_interest",
+			// "rate_of_interest",
 			//"legal_expense_rate",
 			"loan_amount",
 			"repayment_periods"
@@ -112,7 +112,7 @@ frappe.ui.form.on('Amortization Tool', {
 			var conf = response.message
 
 			// to map the current requeriments
-			conf.rate_of_interest = conf.simple_rate_of_interest
+			// conf.rate_of_interest = conf.simple_rate_of_interest
 
 			// map defaults
 			conf.interest_type = "Simple"

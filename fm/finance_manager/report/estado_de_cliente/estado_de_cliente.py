@@ -29,65 +29,69 @@ def get_columns():
 
 def get_data(filters):
 	data, loan = [], ""
-	if not filters.get("customer"):
-		result = frappe.db.sql("""
-			SELECT
-				parent.customer,
-				parent.name as loan,
-				parent.monthly_repayment_amount,
-				child.idx as repayment_no,
-				child.estado as status,
-				parent.total_payment,
-				child.pagos_acumulados,
-				child.monto_pagado,
-				child.capital,
-				child.interes,
-				child.fecha,
-				child.insurance,
-				child.mora_acumulada,
-				child.monto_pendiente,
-				parent.branch_office
-			FROM
-				`tabLoan` AS parent 
-				JOIN
-					`tabTabla Amortizacion` AS child 
-					ON child.parent = parent.name AND parent.status <> "Recuperado"
-			WHERE
-				%(filters)s
-			ORDER BY
-				child.fecha ASC
+	# if not filters.get("customer"):
+		# result = frappe.db.sql("""
+		# 	SELECT
+		# 		parent.customer,
+		# 		parent.name as loan,
+		# 		parent.monthly_repayment_amount,
+		# 		child.idx as repayment_no,
+		# 		child.estado as status,
+		# 		parent.total_payment,
+		# 		child.pagos_acumulados,
+		# 		child.monto_pagado,
+		# 		child.capital,
+		# 		child.interes,
+		# 		child.fecha,
+		# 		child.insurance,
+		# 		child.mora_acumulada,
+		# 		child.monto_pendiente,
+		# 		parent.branch_office
+		# 	FROM
+		# 		`tabLoan` AS parent 
+		# 		JOIN
+		# 			`tabTabla Amortizacion` AS child 
+		# 			ON child.parent = parent.name AND parent.status <> "Recuperado"
+		# 	WHERE
+		# 		%(filters)s
+		# 	GROUP BY
+		# 		parent.name, child.idx 
+		# 	ORDER BY
+		# 		child.fecha ASC
 
-		""" % { "filters": get_filters(filters) }, filters, as_dict=True, debug=False)
-	else:
-		result = frappe.db.sql("""
-			SELECT
-				parent.customer,
-				parent.name as loan,
-				parent.monthly_repayment_amount,
-				child.idx as repayment_no,
-				child.estado as status,
-				parent.total_payment,
-				child.pagos_acumulados,
-				child.monto_pagado,
-				child.capital,
-				child.interes,
-				child.fecha,
-				child.insurance,
-				child.mora_acumulada,
-				child.monto_pendiente,
-				parent.branch_office
-			FROM
-				`tabLoan` AS parent 
-				JOIN
-					`tabTabla Amortizacion` AS child 
-					ON child.parent = parent.name AND parent.status <> "Recuperado"
-			WHERE
-				%(filters)s
-			ORDER BY
-				parent.customer,
-				child.idx
+		# """ % { "filters": get_filters(filters) }, filters, as_dict=True, debug=False)
+	# else:
+	result = frappe.db.sql("""
+		SELECT
+			parent.customer,
+			parent.name as loan,
+			parent.monthly_repayment_amount,
+			child.idx as repayment_no,
+			child.estado as status,
+			parent.total_payment,
+			child.pagos_acumulados,
+			child.monto_pagado,
+			child.capital,
+			child.interes,
+			child.fecha,
+			child.insurance,
+			child.mora_acumulada,
+			child.monto_pendiente,
+			parent.branch_office
+		FROM
+			`tabLoan` AS parent 
+			JOIN
+				`tabTabla Amortizacion` AS child 
+				ON child.parent = parent.name AND parent.status <> "Recuperado"
+		WHERE
+			%(filters)s
+		GROUP BY
+			parent.name, child.idx 
+		ORDER BY
+			parent.customer,
+			child.idx
 
-		""" % { "filters": get_filters(filters) }, filters, as_dict=True)
+	""" % { "filters": get_filters(filters) }, filters, as_dict=True)
 
 
 	for row in result:

@@ -161,6 +161,9 @@ class PolizadeSeguro(Document):
 		# return first_jv
 
 	def create_first_payment(self):
+		# Si es endoso externo no se le hace recibo
+		if self.endoso_externo:
+			return
 		# Pagos completos de seguro
 		from fm.accounts import add
 		
@@ -185,6 +188,7 @@ class PolizadeSeguro(Document):
 		jv.update({
 			"voucher_type":  self.mode_of_payment,
 			"document":'POLIZA',
+			"document_reference": self.name,
 			"es_un_pagare": 1,
 			"loan": self.loan or "",
 			"company": frappe.db.get_single_value("Global Defaults", "default_company"),

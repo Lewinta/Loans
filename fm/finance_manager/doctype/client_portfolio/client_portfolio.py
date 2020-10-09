@@ -8,6 +8,7 @@ from frappe.model.document import Document
 from frappe.desk.tags import DocTags
 from frappe.utils import flt
 from frappe import _
+from fm.api import DISALLOWED_STATUSES
 
 class ClientPortfolio(Document):
 	def validate(self):
@@ -24,18 +25,23 @@ class ClientPortfolio(Document):
 
 		duplicates = frappe.db.sql("""
 			SELECT 
-				loan,
-				customer,
-				parent,
+				`tabCustomer Portfolio`.loan,
+				`tabCustomer Portfolio`.customer,
+				`tabClient Portfolio`.employee_name,
+				`tabCustomer Portfolio`.parent,
 				SUM(1) qty
 			FROM 
 				`tabCustomer Portfolio`
+			JOIN
+				`tabClient Portfolio`
+			ON
+				`tabClient Portfolio`.name = `tabCustomer Portfolio`.parent
 			WHERE
-				loan in ('%s')
+				`tabCustomer Portfolio`.loan in ('%s')
 			AND 
-				parent != '%s'
+				`tabCustomer Portfolio`.parent != '%s'
 			GROUP BY 
-				loan
+				`tabCustomer Portfolio`.loan
 			HAVING
 				qty >= 1
 
@@ -44,7 +50,7 @@ class ClientPortfolio(Document):
 		if duplicates:
 			msg = ""
 			for r in duplicates:
-				msg +="<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(r.get("loan"),r.get("customer"), r.get("parent"))
+				msg +="<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(r.get("loan"),r.get("customer"), r.get("employee_name"))
 
 			frappe.throw("""<h3 class='text-center'>Los siguientes prestamos ya pertenecen a otra cartera:</h3><br>
 				<table class='table table-bordered'>
@@ -75,23 +81,39 @@ class ClientPortfolio(Document):
 				self.remove(row)
 				self.save(ignore_permissions=True)
 
+	def remove_paid_loans(self):
+		for row in self.customer_portfolio:
+			status = frappe.db.get_value("Loan", row.loan, "status")
+			if status == 'Repaid/Closed' and row.received_amount == .000:
+				DocTags("Loan").remove_all(row.loan)
+				self.remove(row)
+				self.save(ignore_permissions=True)
+
+	def show_invalid_loans(self):
+		for l in self.customer_portfolio:
+			status = frappe.db.get_value("Loan", l.loan, "status")
+			if status  in DISALLOWED_STATUSES:
+				print("{} {} {} {} {}".format(l.idx, self.employee_name, l.loan, status, l.received_amount))
+
 	def calculate_pending_amount(self):
 		if not self.customer_portfolio:
 			return
 		
-		self.total_pending = .000
-		self.total_received = .000
+		self.total_pending = self.total_received = self.net_received = self.total_discounts = .000
 		self.customer_qty = 0
 		
 		for row in self.customer_portfolio:
 			loan = frappe.get_doc("Loan", row.loan)
 			row.pending_amount = loan.get_past_due_balance(self.end_date)
-			row.received_amount = loan.get_paid_amount(self.start_date, self.end_date)
-			self.total_pending += row.pending_amount
-			self.total_received += row.received_amount
+			row.received_amount, row.total_discount, row.total_paid = loan.get_paid_amount(self.start_date, self.end_date)
+
+			self.total_discounts += row.total_discount
+			self.net_received    += row.received_amount
+			self.total_received  += row.total_paid
+			self.total_pending   += row.pending_amount
 			self.add_tag(loan.name)
 
 		self.customer_qty = len(self.customer_portfolio)
-		self.percentage_received = flt(self.total_received / self.total_pending * 100, 2) if self.total_pending > 0 else .000
+		self.percentage_received = flt(self.net_received / self.total_pending * 100, 2) if self.net_received > 0 else .000
 
 

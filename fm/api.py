@@ -9,6 +9,10 @@ FULLY_PAID = "SALDADA"
 PARTIALLY_PAID = "ABONO"
 OVERDUE = "VENCIDA"
 
+# Loans with these statuses are not allowed on Client Portfolio
+
+DISALLOWED_STATUSES = ['Legal', 'Recuperado', 'Incautado', 'Perdida Total', 'Repaid/Closed', 'Disponible']
+
 
 def get_repayment(loan, repayment):
 	for row in loan.repayment_schedule:
@@ -464,14 +468,11 @@ def validate_repayment(repayment_name, ff=False):
 		print("_____________")
 		frappe.throw("before cal_fine".format(rpmt.monto_pagado))
 		rpmt = calculate_fine(rpmt, paymt)
-		frappe.errprint("after cal_fine".format(rpmt.monto_pagado))
 		rpmt = apply_payment(rpmt, paymt)
-		frappe.errprint("after apply_pymt".format(rpmt.monto_pagado))
 		rpmt = frappe._dict(rpmt)
 		paymt = frappe._dict(paymt)
 		if str(paymt.posting_date) < str(rpmt.fecha) or ff:
 			rpmt = final_fine(rpmt)
-		frappe.errprint("after final_fine".format(rpmt.monto_pagado))
 		doc.update({
 			"fine": rpmt.fine,
 			"mora_acumulada": rpmt.mora_acumulada,

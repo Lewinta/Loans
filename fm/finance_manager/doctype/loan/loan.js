@@ -1,4 +1,4 @@
-// Copyright (c) 2017, Soldeva, SRL and contributors
+//Copyright (c) 2017, Soldeva, SRL and contributors
 // For license information, please see license.txt
 
 frappe.ui.form.on('Loan', {
@@ -530,7 +530,7 @@ frappe.ui.form.on('Loan', {
 		if (!frm.doc.docstatus == 1) {
 			return 0; // exit code is zero
 		}
-		status_list = ['Legal', 'Recuperado', 'Pending', "Incautado", "Perdida Total", "Taller", "Detenido"]
+		status_list = ['Legal', 'Recuperado', 'Pending', "Incautado", "Perdida Total", "Taller", "Detenido", "Disponible"]
 
 		
 		if (frm.doc.status == "Fully Disbursed") {
@@ -543,9 +543,11 @@ frappe.ui.form.on('Loan', {
 						frm.set_value("old_status", frm.doc.status);
 						frm.set_value("status", st);
 						frm.set_value("new_status", frm.doc.status);
-						frm.save("Update");
-						frm.call("comment_loan_status_changed", response =>{
-						});
+						frm.save("Update").then(
+							() => frm.call("comment_loan_status_changed").then(
+								() => frm.call("remove_loan_from_portfolio")
+							)
+						)
 					},
 					"Cambiar estado"
 				)
@@ -560,8 +562,7 @@ frappe.ui.form.on('Loan', {
 					frm.set_value("status", "Fully Disbursed");
 					frm.set_value("new_status", frm.doc.status);
 					frm.save("Update");
-					frm.call("comment_loan_status_changed", response =>{
-					});
+					frm.call("comment_loan_status_changed");
 				},
 				"Cambiar estado"
 			);
@@ -602,7 +603,7 @@ frappe.ui.form.on('Loan', {
 			frm.add_custom_button(__('Disbursement Entry'), () => frm.trigger("make_jv"), "Hacer")
 		}
 
-		if (frm.doc.status == "Fully Disbursed") {
+		if ( ["Fully Disbursed", "Legal", "Incautado"].includes(frm.doc.status)) {
 			frm.add_custom_button('Entrada de Pago', () => frm.trigger("make_payment_entry"), "Hacer");
 		}
 
@@ -790,57 +791,135 @@ frappe.ui.form.on('Loan', {
 				data = data.message;
 				let balance_fields = [{
 					"fieldname": "capital",
-					"fieldtype": "Read Only",
-					"label": "Capital Pendiente",
-					"default": data.pendiente.toFixed(2),
+					"fieldtype": "Currency",
+					"label": "Total Capital",
+					"default": data.capital.toFixed(2),
 					"precision": 2,
+					"read_only": 1,
 				}, {
 					"fieldname": "comision",
-					"fieldtype": "Read Only",
+					"fieldtype": "Currency",
 					"label": "Comision Pendiente",
 					"default": data.interes.toFixed(2),
 					"precision": 2,
+					"read_only": 1
 				}, {
+					"fieldname": "comision_vencida",
+					"fieldtype": "Currency",
+					"label": "Comision Vencida Pendiente",
+					"default": data.interes_vencido.toFixed(2),
+					"precision": 2,
+					"read_only": 1
+				},
+				// {
+				// 	"fieldname": "total_pending",
+				// 	"fieldtype": "Currency",
+				// 	"label": "Total Pendiente",
+				// 	"default": data.pendiente.toFixed(2),
+				// 	"precision": 2,
+				// 	"read_only": 1,
+				// },
+				 {
 					"fieldname": "cb_1",
 					"fieldtype": "Column Break",
 				}, {
 					"fieldname": "fine",
-					"fieldtype": "Read Only",
+					"fieldtype": "Currency",
 					"label": "Mora Pendiente",
 					"default": data.fine.toFixed(2),
 					"precision": 2,
+					"read_only": 1
 				}, {
 					"fieldname": "insurance",
-					"fieldtype": "Read Only",
+					"fieldtype": "Currency",
 					"label": "Seguro",
 					"default": data.insurance.toFixed(2),
 					"precision": 2,
+					"read_only": 1
+				}, {
+					"fieldname": "grand_total",
+					"fieldtype": "Currency",
+					"label": "Total Pendiente",
+					"default": data.pendiente.toFixed(2),
+					"precision": 2,
+					"read_only": 1
 				}, {
 					"fieldname": "sb_2",
+					"fieldtype": "Section Break",
+				}, {
+					"fieldname": "include_capital",
+					"fieldtype": "Check",
+					"label": "Capital",
+					"default": 1,
+					"read_only": 1,
+					"onchange": () => frm.trigger("calculate_closing_balance")
+				}, {
+					"fieldname": "include_expired_interest",
+					"fieldtype": "Check",
+					"label": "Comision Vencida",
+					"default": 1,
+					"onchange": () => {
+						let fields_data = frm.balance_prompt.fields_dict;
+						
+						if(fields_data.include_expired_interest.get_input_value() == fields_data.include_interest.get_input_value() && fields_data.include_interest.get_input_value() == 1)
+							frm.balance_prompt.set_value("include_expired_interest", 0);
+
+						frm.trigger("calculate_closing_balance");
+					}
+				},{
+					"fieldname": "include_interest",
+					"fieldtype": "Check",
+					"label": "Comision",
+					"default": 0,
+					"onchange": () => {
+						let fields_data = frm.balance_prompt.fields_dict;
+						
+						if(fields_data.include_expired_interest.get_input_value() == fields_data.include_interest.get_input_value() && fields_data.include_interest.get_input_value() == 1)
+							frm.balance_prompt.set_value("include_interest", 0);
+						
+						frm.trigger("calculate_closing_balance");
+					}
+				}, {
+					"fieldname": "cb_2",
+					"fieldtype": "Column Break",
+				},  {
+					"fieldname": "include_fine",
+					"fieldtype": "Check",
+					"label": "Mora",
+					"default": 1,
+					"onchange": () => frm.trigger("calculate_closing_balance")
+				}, {
+					"fieldname": "include_insurance",
+					"fieldtype": "Check",
+					"label": "Seguro",
+					"default": 1,
+					"read_only": 1,
+					"onchange": () => frm.trigger("calculate_closing_balance")
+				}, {
+					"fieldname": "sb_3",
 					"fieldtype": "Section Break",
 				}, {
 					"fieldname": "min_payment",
 					"fieldtype": "Currency",
 					"label": "Pago Minimo",
-					"default": (data.pendiente - data.interes).toFixed(2),
+					"default": (data.capital + data.interes_vencido + data.fine + data.insurance).toFixed(2),
 					"precision": 2,
 					"onchange": () => {
 						let min_payment = frm.balance_prompt.fields_dict.min_payment.value
-						let pendiente = frm.balance_prompt.fields_dict.capital.value
+						let pendiente = frm.balance_prompt.fields_dict.grand_total.value
 
-						
 						frm.balance_prompt.set_value("max_discount", pendiente - min_payment)
-
 					}
 				}, {
 					"fieldname": "cb_3",
 					"fieldtype": "Column Break",
 				}, {
 					"fieldname": "max_discount",
-					"fieldtype": "Read Only",
+					"fieldtype": "Currency",
 					"label": "Descuento Maximo",
 					"default": data.interes.toFixed(2),
 					"precision": 2,
+					"read_only": 1,
 					// "onchange": () => {
 					// 	let max_discount = frm.balance_prompt.fields_dict.max_discount.value
 					// 	let pendiente = frm.balance_prompt.fields_dict.capital.value
@@ -857,6 +936,29 @@ frappe.ui.form.on('Loan', {
 		});
 
 	},
+	calculate_closing_balance: frm => {
+		let min_payment  = 0.00;
+		let max_discount = 0.00;
+
+		// if(frm.balance_prompt.fields_dict.include_capital.get_input_value())
+		min_payment += flt(frm.balance_prompt.fields_dict.capital.value);
+		
+		if(frm.balance_prompt.fields_dict.include_expired_interest.get_input_value())
+			min_payment += flt(frm.balance_prompt.fields_dict.comision_vencida.value);
+
+		if(frm.balance_prompt.fields_dict.include_interest.get_input_value())
+			min_payment += flt(frm.balance_prompt.fields_dict.comision.value);
+
+		if(frm.balance_prompt.fields_dict.include_fine.get_input_value())
+			min_payment += flt(frm.balance_prompt.fields_dict.fine.value);
+
+		// if(frm.balance_prompt.fields_dict.include_insurance.get_input_value())
+		min_payment += flt(frm.balance_prompt.fields_dict.insurance.value);
+
+						
+		frm.balance_prompt.set_value("min_payment", min_payment);
+		frm.balance_prompt.set_value("max_discount", frm.balance_prompt.fields_dict.capital.grand_total - min_payment);
+	},
 	"make_payment_entry": (frm) => {
 		let read_only_discount = !!!frappe.user.has_role("Gerente de Operaciones");
 
@@ -865,23 +967,34 @@ frappe.ui.form.on('Loan', {
 		// let next_cuota = undefined
 		let next_pagare = undefined;
 
-		let found = false;
-
+		let total_pending = 0.00;
+		let total_fine = 0.00;
+		let total_insurance = 0.00;
 		$.map(frm.doc.repayment_schedule, (value) => {
-
-			// if there's no one found yet
-			if (!found && value.estado != "SALDADA") {
-				// means that this is the first one PENDING
-
-				found = true; // set the flag to true
-				next_pagare = value; // and set the value
+			if(!["SALDADA", "PENDIENTE"].includes(value.estado)){
+				total_pending += flt(value.monto_pendiente);
+				total_fine += flt(value.fine);
+				total_insurance += flt(value.insurance);
 			}
+
 		});
 
+		// let found = false;
+		// $.map(frm.doc.repayment_schedule, (value) => {
+
+		// 	// if there's no one found yet
+		// 	if (!found && value.estado != "SALDADA") {
+		// 		// means that this is the first one PENDING
+
+		// 		found = true; // set the flag to true
+		// 		next_pagare = value; // and set the value
+		// 	}
+		// });
+
 		// set the fine amount if there is one
-		let fine_amount = !next_pagare.fine ? 0 : next_pagare.fine;
-		let fine_discount = !next_pagare.fine_discount ? 0 : next_pagare.fine_discount;
-		let repayment_amount = !next_pagare.cuota ? frm.doc.monthly_repayment_amount : next_pagare.cuota;
+		// let fine_amount = !next_pagare.fine ? 0 : next_pagare.fine;
+		// let fine_discount = !next_pagare.fine_discount ? 0 : next_pagare.fine_discount;
+		// let repayment_amount = !next_pagare.cuota ? frm.doc.monthly_repayment_amount : next_pagare.cuota;
 
 		let get_mode_of_payment_options = () => {
 			return [{
@@ -927,7 +1040,8 @@ frappe.ui.form.on('Loan', {
 				"reqd": 1,
 				"precision": 2,
 				"description": "Monto recibido por parte del cliente (Incluyendo Gastos Recuperacion)",
-				"default": next_pagare.monto_pendiente
+				"default": total_pending
+				// "default": next_pagare.monto_pendiente
 			}, {
 				"fieldname": "mode_of_payment",
 				"fieldtype": "Select",
@@ -948,13 +1062,15 @@ frappe.ui.form.on('Loan', {
 			}, {
 				"fieldname": "payment_section",
 				"fieldtype": "Column Break"
-			}, {
-				"fieldname": "repayment_idx",
-				"fieldtype": "Int",
-				"label": __("Pagare No."),
-				"read_only": 1,
-				"default": next_pagare.idx
-			}, {
+			}, 
+			// {
+			// 	"fieldname": "repayment_idx",
+			// 	"fieldtype": "Int",
+			// 	"label": __("Pagare No."),
+			// 	"read_only": 1,
+			// 	// "default": next_pagare.idx
+			// },
+			{
 				"fieldname": "posting_date",
 				"fieldtype": "Date",
 				"label": "Fecha de Posteo",
@@ -988,7 +1104,8 @@ frappe.ui.form.on('Loan', {
 				"label": "Mora (DOP)",
 				"precision": 2,
 				"read_only": 1,
-				"default": fine_amount ? fine_amount : 0.000
+				"default": total_fine
+				// "default": fine_amount ? fine_amount : 0.000
 			}, {
 				"fieldname": "discount_column",
 				"fieldtype": "Column Break"
@@ -998,7 +1115,8 @@ frappe.ui.form.on('Loan', {
 				"label": "Descuento a Mora (DOP)",
 				"default": "0.000",
 				"precision": 2,
-				"default": fine_discount ? fine_discount : 0.000,
+				// "default": total_fine_discount,
+				// "default": fine_discount ? fine_discount : 0.000,
 				"read_only": 1
 			}, {
 				"fieldname": "other_discounts",
@@ -1034,8 +1152,8 @@ frappe.ui.form.on('Loan', {
 				"fieldname": "insurance_amount",
 				"fieldtype": "Float",
 				"label": __("Monto Seguro (DOP)"),
-				"default": next_pagare.insurance || 0.000,
-				"hidden": !next_pagare.insurance || 0,
+				"default": total_insurance,
+				"hidden": !total_insurance || 0,
 				"read_only": 1,
 				"precision": 2,
 			},
@@ -1057,15 +1175,16 @@ frappe.ui.form.on('Loan', {
 				"label": "Monto del Pendiente (DOP)",
 				"read_only": 1,
 				"precision": 2,
-				"default": next_pagare.monto_pendiente
-			}, {
-				"fieldname": "repayment_amount",
-				"fieldtype": "Currency",
-				"label": "Monto del Pagare (DOP)",
-				"read_only": 1,
-				"precision": 2,
-				"default": repayment_amount
+				"default": total_pending
 			},
+			//  {
+			// 	"fieldname": "repayment_amount",
+			// 	"fieldtype": "Currency",
+			// 	"label": "Monto del Pagare (DOP)",
+			// 	"read_only": 1,
+			// 	"precision": 2,
+			// 	// "default": repayment_amount
+			// },
 			{
 				"fieldname": "remarks_section",
 				"fieldtype": "Section Break",
@@ -1113,8 +1232,8 @@ frappe.ui.form.on('Loan', {
 				$.extend(data, {
 					"doctype": frm.doctype,
 					"docname": frm.docname,
-					"capital_amount": next_pagare.capital,
-					"interest_amount": next_pagare.interes,
+					// "capital_amount": next_pagare.capital,
+					// "interest_amount": next_pagare.interes,
 					"paid_amount": flt(data.paid_amount) + flt(data.fine_discount),
 					"sucursal": frappe.boot.sucursal,
 					"validate_payment_entry": data.validate_payment_entry ? true : false,
@@ -1337,8 +1456,9 @@ frappe.ui.form.on('Tabla Amortizacion', {
 	},
 	"historical": (frm, cdt, cdn) => {
 		row = frappe.model.get_doc(cdt, cdn);
-		frappe.route_options = { "loan": frm.doc.name, "repayment": row.idx };
-		frappe.set_route("query-report/Historico Cuotas");
+		// frappe.route_options = { "loan": frm.doc.name, "repayment": row.idx };
+		// frappe.set_route("query-report/Historico Cuotas");
+		window.open(`/#query-report/Historico%20Cuotas?loan=${frm.doc.name}&repayment=${row.idx}`, "_blank");
 	},
 	"add_fine_discount": (frm, cdt, cdn) => new AddLoanDiscountPrompt(frm, cdt, cdn)
 })

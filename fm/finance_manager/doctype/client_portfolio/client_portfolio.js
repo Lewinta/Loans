@@ -41,6 +41,11 @@ frappe.ui.form.on('Client Portfolio', {
 			);
 		}, __("View"));
 	},
+	description: frm => {
+		if (!frm.doc.description)
+			return
+		frm.set_value("description", frm.doc.description.toUpperCase().trim());
+	},
 	update_customer_qty: frm => {
 		frm.set_value("customer_qty", frm.doc.customer_portfolio.length);
 	},

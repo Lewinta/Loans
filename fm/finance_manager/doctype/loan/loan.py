@@ -9,7 +9,7 @@ from frappe import _
 from frappe.utils import nowdate, flt
 from erpnext.controllers.accounts_controller import AccountsController
 from datetime import datetime
-from fm.api import add_months
+from fm.api import add_months, DISALLOWED_STATUSES
 from frappe.utils import add_months
 from frappe.desk.tags import DocTags
 from frappe.utils.background_jobs import enqueue_doc
@@ -31,9 +31,8 @@ class Loan(AccountsController):
 	def after_insert(self):
 		self.update_application_status()
 
-	def on_update_after_submit(self):
-		if self.status in ['Recuperado', 'Incautado', 'Perdida Total', 'Legal']:
-			
+	def remove_loan_from_portfolio(self):
+		if self.status in DISALLOWED_STATUSES:
 			if frappe.db.exists("Customer Portfolio", {"loan": self.name}):
 				child = frappe.get_doc("Customer Portfolio", {"loan": self.name})
 				enqueue_doc("Client Portfolio", child.parent, "remove_loan_from_portfolio")
@@ -194,7 +193,7 @@ class Loan(AccountsController):
 
 	def get_balance_to_close(self):
 		
-		capital = interes = fine = pendiente = insurance = 0
+		capital = interes = fine = pendiente = insurance = interes_vencido = 0
 
 		for rows in frappe.get_list("Tabla Amortizacion", {"parent":self.name, "estado":["!=", "SALDADA"]}):
 			row = frappe.get_doc("Tabla Amortizacion", rows.name)
@@ -202,10 +201,11 @@ class Loan(AccountsController):
 			pendiente += row.monto_pendiente
 			capital += row.capital
 			interes += row.interes
+			interes_vencido += row.interes if row.estado == "VENCIDA" else .00
 			fine += row.fine
 			insurance += row.insurance
 
-		return {"capital": capital, "interes": interes, "fine": fine, "insurance": insurance, "pendiente": pendiente}
+		return {"capital": capital, "interes": interes, "interes_vencido": interes_vencido, "fine": fine, "insurance": insurance, "pendiente": pendiente}
 
 	def make_simple_repayment_schedule(self):
 		import fm.accounts
@@ -457,11 +457,57 @@ class Loan(AccountsController):
 		if not to_date:
 			to_date = nowdate()
 			
-		return frappe.db.sql("""
-			SELECT 
-				IFNULL(SUM(total_debit), 0)
+		d = frappe.db.sql("""
+			SELECT
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'capital',
+						`tabJournal Entry Account`.credit_in_account_currency,
+						0
+					)
+				) + 
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'fine',
+						`tabJournal Entry Account`.credit_in_account_currency,
+						0
+					)
+				) +
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'insurance',
+						`tabJournal Entry Account`.credit_in_account_currency,
+						0
+					)
+				) +
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'gastos_recuperacion',
+						`tabJournal Entry Account`.credit_in_account_currency,
+						0
+					)
+				) -
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'other_discounts',
+						`tabJournal Entry Account`.debit_in_account_currency,
+						0
+					)
+				) received,
+				SUM(
+					IF(
+						`tabJournal Entry Account`.repayment_field = 'other_discounts',
+						`tabJournal Entry Account`.debit_in_account_currency,
+						0
+					)
+				) other_discounts,
+				SUM(`tabJournal Entry Account`.debit_in_account_currency) total_paid
 			FROM 
 				`tabJournal Entry`
+			JOIN
+				`tabJournal Entry Account`
+			ON
+				`tabJournal Entry`.name = `tabJournal Entry Account`.parent
 			WHERE
 				`tabJournal Entry`.es_un_pagare = 1
 			AND
@@ -472,7 +518,9 @@ class Loan(AccountsController):
 				`tabJournal Entry`.posting_date >= %s
 			AND
 				`tabJournal Entry`.posting_date <= %s
-		""", (self.name, from_date, to_date), debug=False)[0][0]
+		""", (self.name, from_date, to_date), debug=False, as_dict=True)[0]
+
+		return flt(d.received), flt(d.other_discounts), flt(d.total_paid)
 
 
 def check_repayment_method(repayment_method, loan_amount, monthly_repayment_amount, repayment_periods):

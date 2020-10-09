@@ -11,6 +11,9 @@ frappe.ui.form.on("Journal Entry", {
         })
     },
     refresh: function(frm) {
+        if (frm.doc.loan){
+            frm.add_custom_button("Prestamo", () => frappe.set_route(["Form", "Loan", frm.doc.loan]))
+        }  
         var callback = function(response) {
             if (frm.doc.__islocal || !response.message) 
                 return 0 // exit code is zero
@@ -66,10 +69,13 @@ frappe.ui.form.on("Journal Entry", {
             frappe.hide_msgprint()
         },1500)
 
-        frm.doc.docstatus < 1 && frm.set_value("branch_office", frappe.boot.sucursal)
-        if (frm.doc.loan){
-            frm.add_custom_button("Prestamo", () => frappe.set_route(["Form", "Loan", frm.doc.loan]))
-        }  
+        if(frm.doc.docstatus < 1 && frm.doc.loan){
+            frappe.db.get_value("Loan", frm.doc.loan, "branch_office", ({branch_office}) => {
+                if (branch_office && frm.doc.branch_office != branch_office)
+                    frm.set_value("branch_office", branch_office);
+            })
+        }
+
     },
     "validate": (frm) => {
         setTimeout(function() {

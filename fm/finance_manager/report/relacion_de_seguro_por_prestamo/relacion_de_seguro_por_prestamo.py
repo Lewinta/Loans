@@ -16,10 +16,14 @@ def get_columns():
 	"""return columns based on filters"""
 	columns = [
 		_("Loan") + ":Link/Loan:90",
+		_("Date") + ":Date:90",
+		_("Cierre") + ":Date:90",
 		_("Cuotas Pend.") + ":Int:90",
 		_("Status") + ":Data:100",
 		_("Cedula") + ":Data:110",
 		_("Cliente") + ":Data:300",
+		_("Tel1") + ":Data:120",
+		_("Tel2") + ":Data:120",
 		_("Sucursal") + ":Data:120",
 		_("Marca") + ":Data:100",
 		_("Model") + ":Data:100",
@@ -28,6 +32,7 @@ def get_columns():
 		_("Precio Venta") + ":Currency:100",
 		_("Poliza") + ":Link/Poliza de Seguro:120",
 		_("Status") + ":Data:100",
+		_("Endoso Externo") + ":Check:110",
 		_("Aseguradora") + ":Data:120",
 		_("Poliza No.") + ":Data:120",
 		_("Co-Conductor") + ":Data:200",
@@ -55,10 +60,14 @@ def get_data(filters):
 	return frappe.db.sql("""
 		SELECT
 			`tabLoan`.name,
+			CAST(`tabLoan`.creation AS DATE) as creation,
+			`tabLoan`.closing_date,
 			(SELECT COUNT(1) FROM `tabTabla Amortizacion` WHERE `tabTabla Amortizacion`.parent =`tabLoan`.name AND `tabTabla Amortizacion`.estado = 'VENCIDA' ) as pend,
 			`tabLoan`.status,
 			`tabLoan`.customer_cedula,
 			`tabLoan`.customer_name,
+			(SELECT COALESCE(`tabPhone Number`.number, '-') FROM `tabPhone Number` WHERE `tabPhone Number`.parent = `tabLoan`.customer AND `tabPhone Number`.idx = 1) as tel1,
+			(SELECT COALESCE(`tabPhone Number`.number, '-') FROM `tabPhone Number` WHERE `tabPhone Number`.parent = `tabLoan`.customer AND `tabPhone Number`.idx = 2) as tel2,
 			`tabLoan`.branch_office,
 			`tabVehicle`.make,
 			`tabVehicle`.model,
@@ -67,6 +76,7 @@ def get_data(filters):
 			`tabVehicle`.price,
 			`tabPoliza de Seguro`.name,
 			`tabPoliza de Seguro`.status,
+			`tabPoliza de Seguro`.endoso_externo,
 			`tabPoliza de Seguro`.insurance_company,
 			`tabPoliza de Seguro`.policy_no,
 			`tabPoliza de Seguro`.nombre_del_conductor,
@@ -80,6 +90,10 @@ def get_data(filters):
 			`tabVehicle`
 		ON
 			`tabVehicle`.name = `tabLoan`.asset
+		JOIN
+			`tabPhone Number`
+		ON
+			`tabPhone Number`.parent = `tabLoan`.customer
 		LEFT JOIN
 			`tabPoliza de Seguro`
 		ON
@@ -92,4 +106,4 @@ def get_data(filters):
 		WHERE
 			%s
 
-	""" % conditions, filters, debug=True)
+	""" % conditions, filters, debug=False)

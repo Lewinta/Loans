@@ -58,9 +58,9 @@ def get_data(filters):
 			'',
 		)
 	)
-
+	grace_days = frappe.db.get_single_value("FM Configuration", "grace_days")
 	rpmt = frappe._dict(get_base_rpmt(row))
-	due_date = from_date = curdate = str(add_days(row.fecha, 5))
+	due_date = from_date = curdate = str(add_days(row.fecha, int(grace_days)))
 	vencimientos = int(ceil(date_diff(today, row.fecha)/30)) + 1
 	# Pagos antes del vencimiento
 	last_trans = ''
@@ -243,7 +243,8 @@ def has_payments(rpmt, to_date, from_date=False):
 def calculate_fine(rpmt, curdate):
 	rpmt = frappe._dict(rpmt)
 	fine_rate = frappe.db.get_value("Loan", rpmt.parent, "fine") / 100.0
-	due_date  = str(add_days(rpmt.fecha, 5))
+	grace_days = frappe.db.get_single_value("FM Configuration", "grace_days")
+	due_date  = str(add_days(rpmt.fecha, int(grace_days)))
 	print("Calculating {} {}".format(curdate, due_date))
 	if str(curdate) > str(rpmt.fecha):
 		print("Calculando {} {}".format(curdate, due_date))

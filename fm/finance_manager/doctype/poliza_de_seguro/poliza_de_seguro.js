@@ -2,10 +2,16 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Poliza de Seguro', {
+	onload_post_render: function(frm) {
+		console.log(`${frm.doc.loan} -> ${frm.doc.__islocal}`);
+		if (frm.doc.loan && frm.doc.__islocal){
+        	frm.trigger("loan");
+		}
+	},
 	onload: function(frm) {
 		frm.trigger("set_queries")
 		frm.trigger("get_pending_repayments")
-		if (frm.doc.loan){
+		if (frm.doc.loan && frm.doc.__islocal){
 			frappe.db.get_value(
 				"Loan",
 				frm.doc.loan,
@@ -34,9 +40,12 @@ frappe.ui.form.on('Poliza de Seguro', {
 		}
 
 		frappe.model.get_value(doctype, docname, "default_insurance_supplier", callback)	
-		frm.toggle_reqd("insurance_starts_on", frm.is_new());
+		frm.toggle_reqd("insurance_starts_on", frm.doc.loan);
 	},
 	refresh: function(frm) {
+		frm.doc.__islocal && frm.set_value("repayments", frappe.boot.insurance_repayments);
+        // frm.is_new() && ! frm.doc.loan && frm.trigger("fetch_loan");
+
 		$.map(["asset", "customer", "customer_name"], field => {
 			frm.add_fetch("loan", field, field);	
 		})
@@ -59,9 +68,27 @@ frappe.ui.form.on('Poliza de Seguro', {
 		
 		if (frm.doc.loan){
             frm.add_custom_button("Prestamo", () => frappe.set_route(["Form", "Loan", frm.doc.loan]))
-        } 
+        }
+        // frappe.call("has_payments").then((d) => {
+        // 	if(d.has_payments)
+        // 		frm.add_custom_button("Ver Pagos", () => frappe.set_route(["List", "Journal Entry", {"doctype": frm.doc.doctype, ""}]))
+        // }) 
+        
 	},
+	fetch_customer_details: (frm) => {
+        frappe.db.get_value("Loan", frm.doc.loan, ["customer", "customer_name", "asset", "branch_office"])
+            .then((response) => $.each(response.message, (key, value) => frm.set_value(key, value)));
+    },
+	fetch_loan: frm => {
+        let field = {"label": "Prestamo", "fieldtype": "Link", "fieldname": "loan", "options": "Loan"};
+        frappe.prompt(field, (values) => {
+            frm.set_value("loan", values["loan"]);
+            frm.refresh();
+        }, "Seleccione el Prestamo", "Continuar");
+    },
+	repayments: frm => frm.trigger("total_amount"),
 	loan: frm => {
+		frm.trigger("fetch_customer_details");
 		frm.trigger("get_pending_repayments");
 		if (!frm.doc.loan)
 			frm.set_value("customer", "");
@@ -159,7 +186,7 @@ frappe.ui.form.on('Poliza de Seguro', {
 		// to make it match with real amount being charged to the customer
 		frm.doc.amount = flt(amount * frm.doc.repayments)
 
-		frm.doc.percentage = frm.doc.amount? frm.doc.initial_payment / frm.doc.amount * 100.000 : 0.000
+		frm.doc.percentage = frm.doc.total_amount ? frm.doc.initial_payment / frm.doc.total_amount * 100.000 : 0.000
 
 		// refresh all fields
 		frm.refresh_fields()
@@ -174,6 +201,8 @@ frappe.ui.form.on('Poliza de Seguro', {
 		frm.trigger("amount")
 	},
 	validate: function(frm) {
+        // !frm.doc.loan && frm.trigger("fetch_loan");
+
 		if (frm.doc.financiamiento && frm.doc.amount <= 0.000){
 			frappe.msgprint("Ingrese un monto valido para el seguro!")
 			validated = false
