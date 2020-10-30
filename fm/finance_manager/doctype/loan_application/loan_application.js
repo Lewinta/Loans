@@ -17,10 +17,10 @@ frappe.ui.form.on('Loan Application', {
 		frm.trigger("toggle_fields");
 		frm.trigger("add_toolbar_buttons");
 		
-		if (!frappe.user.has_role("Gerente de Operaciones"))
-			frm.set_df_property("branch_office", "read_only", 1);
+		// if (!frappe.user.has_role("Gerente de Operaciones"))
+		// 	frm.set_df_property("branch_office", "read_only", 1);
 
-		frm.doc.docstatus < 1 && !frm.doc.branch_office && frm.set_value("branch_office", frappe.boot.sucursal);
+		// frm.doc.docstatus < 1 && !frm.doc.branch_office && frm.set_value("branch_office", frappe.boot.sucursal);
 		setTimeout(function() {
 			$("[data-fieldname=description]").css("height", 94)
 		}, 100)

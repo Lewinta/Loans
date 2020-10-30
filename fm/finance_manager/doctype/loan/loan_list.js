@@ -51,6 +51,8 @@ frappe.listview_settings['Loan'] = {
 			return ["Taller", "purple", "status,=,Taller"]
 		}else if(doc.status === "Incautado") {
 			return ["Incautado", "purple", "status,=,Incautado"]
+		}else if(doc.status === "Intimado") {
+			return ["Intimado", "purple", "status,=,Intimado"]
 		}
 	}
 }

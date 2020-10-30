@@ -19,6 +19,7 @@ def get_columns():
 		("Mora", "Currency", 100),
 		("Seguro", "Currency", 100),
 		("Descuentos", "Currency", 100),
+		("Intimaciones", "Currency", 120),
 		("Gastos Legal", "Currency", 120),
 		("Total", "Currency", 120),
 	)
@@ -138,6 +139,14 @@ def get_fields(filters):
 		),
 		("""SUM(
 				IF(
+					`tabJournal Entry Account`.repayment_field = 'gastos_intimacion',
+					`tabJournal Entry Account`.credit_in_account_currency,
+					0
+				)
+			) gastos_intimacion"""
+		),
+		("""SUM(
+				IF(
 					`tabJournal Entry Account`.repayment_field = 'gastos_recuperacion',
 					`tabJournal Entry Account`.credit_in_account_currency,
 					0
@@ -214,8 +223,9 @@ def get_data(filters):
 				row.fine,
 				row.insurance,
 				row.other_discounts,
+				row.gastos_intimacion,
 				row.gastos_recuperacion,
-				row.capital + row.fine + row.insurance - row.other_discounts + row.gastos_recuperacion
+				row.capital + row.fine + row.insurance - row.other_discounts + row.gastos_recuperacion + row.gastos_intimacion
 			) 
 		)
 	return results

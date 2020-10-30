@@ -11,6 +11,12 @@ frappe.query_reports["Ingresos"] = {
 			"options": "Company",
 			"default": frappe.defaults.get_user_default("Company"),
 			"reqd": 1
+		},{
+			"label": __("Branch Office"),
+			"fieldname":"branch_office",
+			"fieldtype": "Link",
+			"options": "Branch Office",
+			"reqd": 1
 		},
 		{
 			"fieldname":"from_date",
@@ -26,5 +32,6 @@ frappe.query_reports["Ingresos"] = {
 			"default": frappe.datetime.year_end(),
 			"reqd": 1
 		},
+
 	]
 }

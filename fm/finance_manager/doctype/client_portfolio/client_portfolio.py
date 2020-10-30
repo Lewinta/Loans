@@ -115,5 +115,23 @@ class ClientPortfolio(Document):
 
 		self.customer_qty = len(self.customer_portfolio)
 		self.percentage_received = flt(self.net_received / self.total_pending * 100, 2) if self.net_received > 0 else .000
+	
+	def move_loan(self):
+		frappe.errprint("Let's move {} to {}".format(self.loan_to_move, self.new_portfolio))
+		if not self.loan_to_move or not self.new_portfolio:
+			return
+		result = filter(lambda r, loan_to_move=self.loan_to_move: r.loan == loan_to_move, self.customer_portfolio)
+		frappe.errprint("Found {}".format(result))
+		if not result:
+			frappe.throw("El prestamo <b>{}</b> no pertenece a esta cartera".format(self.loan_to_move))
+
+		self.customer_portfolio.remove(result[0])
+		self.save()
+		frappe.errprint("Saved")
+
+		new_portfolio = frappe.get_doc("Client Portfolio", self.new_portfolio)
+		new_portfolio.append("customer_portfolio", {"loan": result[0].loan})
+		new_portfolio.save()
+		frappe.errprint("NEw SAved")
 
 

@@ -15,8 +15,12 @@ def execute(filters=None):
 	company_condition = ""
 	totals = []
 
-	if filters.get("company"):
-		company_condition = 'AND company=%(company)s'
+	# if filters.get("company"):
+	# 	company_condition = 'AND company=%(company)s'
+	branch_office_condition = ''
+	
+	# if filters.get("branch_office"):
+	# 	branch_office_condition = 'AND branch_office=%(branch_office)s'
 
 	result = frappe.db.sql("""
 		SELECT
@@ -30,8 +34,6 @@ def execute(filters=None):
 			SUM(IF(child.repayment_field = 'insurance' AND  parent.es_un_pagare = 1, child.credit, 0)) AS insurance,
 			SUM(IF(child.repayment_field = 'other_discounts' AND parent.es_un_pagare = 1, child.debit, 0)) AS discount,
 			SUM(IF(parent.es_un_pagare   = 0 AND parent.voucher_type = "Bank Entry", child.debit, 0)) AS total_disbursed,
-
-
 			COUNT(parent.name) AS records
 		FROM
 			`tabJournal Entry` AS parent
@@ -40,11 +42,17 @@ def execute(filters=None):
 				ON child.parent = parent.name
 		WHERE
 			parent.docstatus = 1
-			AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+		AND 
+			posting_date 
+		BETWEEN 
+			%(from_date)s 
+		AND 
+			%(to_date)s
+		AND
+				branch_office = %(branch_office)s
 		GROUP BY yearmonth
 		ORDER BY
-			parent.posting_date""".format(company_condition=company_condition),
-	filters, as_dict=True)
+			parent.posting_date""", filters, as_dict=True, debug=False)
 
 	loan_result = frappe.db.sql("""
 		SELECT
@@ -59,10 +67,11 @@ def execute(filters=None):
 			l.docstatus = 1
 			AND
 				posting_date BETWEEN %(from_date)s AND %(to_date)s
+			AND
+				branch_office = %(branch_office)s
 		GROUP BY yearmonth
 		ORDER BY
-			l.posting_date""".format(company_condition=company_condition),
-	filters, as_dict=True)
+			l.posting_date""", filters, as_dict=True, debug=False)
 
 	for row in result:
 		key = row.posting_date.strftime("%Y-%m")

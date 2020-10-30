@@ -37,6 +37,9 @@ def submit_journal(doc, event):
 		
 		if flt(doc.gastos_recuperacion):
 			fm.api.create_purchase_invoice( doc.gastos_recuperacion, "Recuperacion", doc.name)
+		
+		if flt(doc.gastos_intimacion):
+			fm.api.create_purchase_invoice( doc.gastos_intimacion, "Intimacion", doc.name)
 
 		loan = frappe.get_doc("Loan", doc.loan)
 
@@ -451,7 +454,7 @@ def make_payment_entry(opts, create_jv=True):
 		party_account_currency = get_account_currency(loan.customer_loan_account)
 		today = frappe.utils.nowdate()
 		# Variables for the print format
-		ttl_paid = ttl_recuperacion = 0.00
+		ttl_paid = ttl_recuperacion = ttl_intimacion = 0.00
 
 		conf = frappe.get_single("FM Configuration")
 		if loan.customer_currency == "USD":
@@ -480,14 +483,16 @@ def make_payment_entry(opts, create_jv=True):
 			"ttl_insurance": opts.ttl_insurance,
 			"ttl_fine": opts.ttl_fine,
 			"gastos_recuperacion": opts.gastos_recuperacion,
+			"gastos_intimacion": opts.gastos_intimacion,
 			"loan": loan.name
 		})
 		if options.paid_amount:
 			add(options.jv, loan.payment_account, options.paid_amount, True, "paid_amount")
 
-		if flt(options.gps) or flt(options.gastos_recuperacion):
+		if flt(options.gps) or flt(options.gastos_recuperacion) or flt(options.gastos_intimacion):
 			options.gps = flt(options.gps)
 			options.gastos_recuperacion = flt(options.gastos_recuperacion)
+			options.gastos_intimacion = flt(options.gastos_intimacion)
 
 		if flt(options.fine_discount):
 			add(options.jv, conf.default_discount_account, options.fine_discount, True, "fine_discount")
@@ -496,7 +501,7 @@ def make_payment_entry(opts, create_jv=True):
 			add(options.jv, conf.default_discount_account, options.other_discounts, True, "other_discounts")
 
 		if flt(options.paid_amount or options.other_discounts):
-			capital_amount = flt(options.paid_amount) - flt(options.gps) - flt(options.gastos_recuperacion)\
+			capital_amount = flt(options.paid_amount) - flt(options.gps) - flt(options.gastos_recuperacion) - flt(options.gastos_intimacion)\
 				- flt(options.jv.ttl_fine) - flt(opts.ttl_insurance) + flt(options.fine_discount) + flt(options.other_discounts)
 			
 			if capital_amount > 0:
@@ -508,6 +513,9 @@ def make_payment_entry(opts, create_jv=True):
 		if flt(options.gps):
 			add(options.jv, conf.goods_received_but_not_billed, options.gps, False, "gps")
 
+		if flt(options.gastos_intimacion):
+			add(options.jv, conf.goods_received_but_not_billed, options.gastos_intimacion, False, "gastos_intimacion")
+		
 		if flt(options.gastos_recuperacion):
 			add(options.jv, conf.goods_received_but_not_billed, options.gastos_recuperacion, False, "gastos_recuperacion")
 
@@ -536,15 +544,15 @@ def make_payment_entry(opts, create_jv=True):
 		return options.jv
 
 	received_amount_and_others = flt(opts.paid_amount) + flt(opts.other_discounts) \
-		- (flt(opts.gps) + flt(opts.gastos_recuperacion))
+		- (flt(opts.gps) + flt(opts.gastos_recuperacion) + flt(opts.gastos_intimacion))
 
 	opts.ttl_fine = opts.ttl_fine_discount = opts.ttl_insurance = opts.ttl_capital = opts.ttl_interest = 0.00
 
 	while received_amount_and_others > 0.000 and opts.validate_payment_entry:
 		row = loan.next_repayment() or\
 			frappe.throw("""<h4>Parece que este prestamo no tiene mas pagares.</h4>
-				<b>Si esta pagando multiples cuotas, es probable que el monto que este digitando
-				sea mayor al monto total pendiente del prestamo!</b>""")
+				<b>Si esta pagando multiples cuotas, es probable que el monto digitado ${}
+				sea mayor al monto total pendiente del prestamo!</b>""".format(received_amount_and_others))
 
 		total_fine = frappe.get_value("Tabla Amortizacion", {
 			"parent": row.parent, 
@@ -653,6 +661,7 @@ def make_payment_entry(opts, create_jv=True):
 			"fine_discount": opts.fine_discount,
 			"gps": opts.gps,
 			"gastos_recuperacion": opts.recuperacion,
+			"gastos_intimacion": opts.intimacion,
 			"loan_amount": loan.total_payment,
 			"pending_amount": fm.api.get_pending_amount_for_loan(loan.customer, loan.posting_date),
 			"mode_of_payment": opts.mode_of_payment,

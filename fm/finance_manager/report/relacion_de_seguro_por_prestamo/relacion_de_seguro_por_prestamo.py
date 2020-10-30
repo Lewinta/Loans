@@ -19,7 +19,7 @@ def get_columns():
 		_("Date") + ":Date:90",
 		_("Cierre") + ":Date:90",
 		_("Cuotas Pend.") + ":Int:90",
-		_("Status") + ":Data:100",
+		_("Status Prestamo") + ":Data:100",
 		_("Cedula") + ":Data:110",
 		_("Cliente") + ":Data:300",
 		_("Tel1") + ":Data:120",
@@ -31,7 +31,7 @@ def get_columns():
 		_("Chassis") + ":Data:120",
 		_("Precio Venta") + ":Currency:100",
 		_("Poliza") + ":Link/Poliza de Seguro:120",
-		_("Status") + ":Data:100",
+		_("Status Poliza") + ":Data:100",
 		_("Endoso Externo") + ":Check:110",
 		_("Aseguradora") + ":Data:120",
 		_("Poliza No.") + ":Data:120",
@@ -66,8 +66,8 @@ def get_data(filters):
 			`tabLoan`.status,
 			`tabLoan`.customer_cedula,
 			`tabLoan`.customer_name,
-			(SELECT COALESCE(`tabPhone Number`.number, '-') FROM `tabPhone Number` WHERE `tabPhone Number`.parent = `tabLoan`.customer AND `tabPhone Number`.idx = 1) as tel1,
-			(SELECT COALESCE(`tabPhone Number`.number, '-') FROM `tabPhone Number` WHERE `tabPhone Number`.parent = `tabLoan`.customer AND `tabPhone Number`.idx = 2) as tel2,
+			`viewCustomer Numbers`.tel1,
+			`viewCustomer Numbers`.tel2,
 			`tabLoan`.branch_office,
 			`tabVehicle`.make,
 			`tabVehicle`.model,
@@ -91,9 +91,9 @@ def get_data(filters):
 		ON
 			`tabVehicle`.name = `tabLoan`.asset
 		JOIN
-			`tabPhone Number`
+			`viewCustomer Numbers`
 		ON
-			`tabPhone Number`.parent = `tabLoan`.customer
+			`viewCustomer Numbers`.customer = `tabLoan`.customer
 		LEFT JOIN
 			`tabPoliza de Seguro`
 		ON

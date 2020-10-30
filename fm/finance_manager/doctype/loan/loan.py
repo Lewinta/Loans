@@ -193,7 +193,7 @@ class Loan(AccountsController):
 
 	def get_balance_to_close(self):
 		
-		capital = interes = fine = pendiente = insurance = interes_vencido = 0
+		capital = interes = fine = pendiente = insurance = interes_vencido = pagado = 0
 
 		for rows in frappe.get_list("Tabla Amortizacion", {"parent":self.name, "estado":["!=", "SALDADA"]}):
 			row = frappe.get_doc("Tabla Amortizacion", rows.name)
@@ -201,9 +201,13 @@ class Loan(AccountsController):
 			pendiente += row.monto_pendiente
 			capital += row.capital
 			interes += row.interes
+			pagado += row.monto_pagado
 			interes_vencido += row.interes if row.estado == "VENCIDA" else .00
 			fine += row.fine
 			insurance += row.insurance
+		
+		# vamos a descontar cualquier abono realizado
+		interes -= pagado
 
 		return {"capital": capital, "interes": interes, "interes_vencido": interes_vencido, "fine": fine, "insurance": insurance, "pendiente": pendiente}
 

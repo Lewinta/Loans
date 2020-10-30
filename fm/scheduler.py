@@ -22,7 +22,7 @@ def calculate_fines():
 	today = str(nowdate())
 
 	# let's begin
-	for loan in frappe.get_list("Loan", { "docstatus": "1", "status": ["in", "Fully Disbursed, Recuperado, Legal, Incautado"] }):
+	for loan in frappe.get_list("Loan", { "docstatus": "1", "status": ["in", "Fully Disbursed, Recuperado, Legal, Incautado, Intimado"] }):
 
 		due_repayment_list = []
 
@@ -266,7 +266,7 @@ def assign_loans():
 	and
 		`tabLoan`.docstatus = 1
 	and
-		`tabLoan`.status not in ('Recuperado', 'Legal')
+		`tabLoan`.status not in ('Recuperado', 'Legal', 'Intimado')
 	and 
 		`tabLoan`.branch_office = 'SANTO DOMINGO'
 	group by 

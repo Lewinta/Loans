@@ -7,7 +7,7 @@ frappe.ui.form.on('Loan', {
 		// to filter some link fields
 		frm.trigger("set_queries");
 
-		if (!frappe.user.has_role("System Manager"))
+		if (!frappe.user.has_role(["System Manager", "Gerente de Operaciones"]))
 			frm.set_df_property("branch_office", "read_only", 1);
 
 		if (["Approved", "Linked"].includes(frm.doc.status)) {
@@ -530,7 +530,7 @@ frappe.ui.form.on('Loan', {
 		if (!frm.doc.docstatus == 1) {
 			return 0; // exit code is zero
 		}
-		status_list = ['Legal', 'Recuperado', 'Pending', "Incautado", "Perdida Total", "Taller", "Detenido", "Disponible"]
+		status_list = ['Legal', 'Recuperado', 'Pending', "Incautado", "Perdida Total", "Taller", "Detenido", "Disponible", "Intimado"]
 
 		
 		if (frm.doc.status == "Fully Disbursed") {
@@ -554,7 +554,7 @@ frappe.ui.form.on('Loan', {
 			})
 		}
 
-		if (["Recuperado", "Legal", "Pending", "Incautado", "Perdida Total", "Taller"].includes(frm.doc.status)) {
+		if (["Recuperado", "Legal", "Pending", "Incautado", "Perdida Total", "Taller", "Intimado"].includes(frm.doc.status)) {
 			frm.add_custom_button(
 				__('Reanudar'),
 				() => {
@@ -603,7 +603,7 @@ frappe.ui.form.on('Loan', {
 			frm.add_custom_button(__('Disbursement Entry'), () => frm.trigger("make_jv"), "Hacer")
 		}
 
-		if ( ["Fully Disbursed", "Legal", "Incautado"].includes(frm.doc.status)) {
+		if ( ["Fully Disbursed", "Legal", "Incautado", "Intimado"].includes(frm.doc.status)) {
 			frm.add_custom_button('Entrada de Pago', () => frm.trigger("make_payment_entry"), "Hacer");
 		}
 
@@ -1086,6 +1086,11 @@ frappe.ui.form.on('Loan', {
 				"fieldtype": "Check",
 				"default": 0
 			}, {
+				"fieldname": "has_intimacion",
+				"label": "Agregar Intimacion",
+				"fieldtype": "Check",
+				"default": 0
+			}, {
 				"fieldname": "add_user_remarks",
 				"label": "Agregar Notas",
 				"fieldtype": "Check",
@@ -1130,9 +1135,9 @@ frappe.ui.form.on('Loan', {
 				"fieldname": "miscelaneos",
 				"fieldtype": "Section Break",
 			}, {
-				"fieldname": "gps",
+				"fieldname": "gastos_intimacion",
 				"fieldtype": "Float",
-				"label": "GPS (DOP)",
+				"label": "Gastos de Intimacion (DOP)",
 				"default": "0.000",
 				"description": "Debe ser considerado como parte del Monto Recibido",
 				"precision": 2,
@@ -1147,6 +1152,13 @@ frappe.ui.form.on('Loan', {
 				"description": "Debe ser considerado como parte del Monto Recibido",
 				"precision": 2,
 			}, {
+				"fieldname": "gps",
+				"fieldtype": "Float",
+				"label": "GPS (DOP)",
+				"default": "0.000",
+				"description": "Debe ser considerado como parte del Monto Recibido",
+				"precision": 2,
+			},{
 				"fieldtype": "Section Break"
 			}, {
 				"fieldname": "insurance_amount",
@@ -1188,14 +1200,14 @@ frappe.ui.form.on('Loan', {
 			{
 				"fieldname": "remarks_section",
 				"fieldtype": "Section Break",
-				"depends_on": "eval:['Administrator','marlenliam19@gmail.com', 'keylaali@hotmail.com'].includes(frappe.session.user)"
+				"depends_on": "eval:['Administrator','licda.estrella@gmail.com'].includes(frappe.session.user)"
 			},
 			{
 				"label": "Nombre del Pago",
 				"fieldname": "new_name",
 				"fieldtype": "Int",
 				"bold": 1,
-				"depends_on": "eval:['Administrator','marlenliam19@gmail.com', 'keylaali@hotmail.com'].includes(frappe.session.user)"
+				"depends_on": "eval:['Administrator','licda.estrella@gmail.com'].includes(frappe.session.user)"
 			},
 			{
 				"fieldname": "remarks_section",
@@ -1288,6 +1300,7 @@ frappe.ui.form.on('Loan', {
 			frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.hide();
 			frm.payment_entry_prompt.fields_dict.gps.$wrapper.hide();
 			frm.payment_entry_prompt.fields_dict.gastos_recuperacion.$wrapper.hide();
+			frm.payment_entry_prompt.fields_dict.gastos_intimacion.$wrapper.hide();
 
 			frm.payment_entry_prompt.fields_dict.reference_name.toggle(false);
 			frm.payment_entry_prompt.fields_dict.reference_date.toggle(false);
@@ -1317,11 +1330,12 @@ frappe.ui.form.on('Loan', {
 						.then(() => {
 							let _gps = frm.payment_entry_prompt.get_value("gps");
 							let _recuperacion = frm.payment_entry_prompt.get_value("gastos_recuperacion");
+							let _intimacion = frm.payment_entry_prompt.get_value("gastos_intimacion");
 							let _paid_amount = frm.payment_entry_prompt.get_value("paid_amount") +
 								frm.payment_entry_prompt.get_value("other_discounts");
 
-							if (_gps + _recuperacion > _paid_amount) {
-								frm.payment_entry_prompt.set_value("paid_amount", _gps + _paid_amount)
+							if (_intimacion + _gps + _recuperacion > _paid_amount) {
+								frm.payment_entry_prompt.set_value("paid_amount", _gps + _paid_amount + _intimacion)
 							}
 
 						});
@@ -1339,11 +1353,52 @@ frappe.ui.form.on('Loan', {
 					if (!frm.payment_entry_prompt.get_value("has_recuperacion")) {
 						frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.hide();
 					}
+					if (!frm.payment_entry_prompt.get_value("has_intimacion")) {
+						frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.hide();
+					}
 					_gps = frm.payment_entry_prompt.get_value("gps");
 					frm.payment_entry_prompt.set_value("gps", 0.000);
 				}
 			};
 			frm.payment_entry_prompt.fields_dict.has_gps.bind_change_event();
+
+			frm.payment_entry_prompt.fields_dict.has_intimacion.change = (event) => {
+				let checked = frm.payment_entry_prompt.get_value("has_intimacion");
+
+				if (checked) {
+
+					frm.payment_entry_prompt.set_value("gastos_intimacion", flt(frappe.boot.fm_configuration.intimation_amount))
+						.then(() => {
+							let _recuperacion = frm.payment_entry_prompt.get_value("gastos_recuperacion");
+							let _intimacion = frm.payment_entry_prompt.get_value("gastos_intimacion");
+							let _gps = frm.payment_entry_prompt.get_value("gps");
+							let _paid_amount = frm.payment_entry_prompt.get_value("paid_amount") +
+								frm.payment_entry_prompt.get_value("other_discounts");
+
+							if (_intimacion + _recuperacion + _gps > _paid_amount) {
+								frm.payment_entry_prompt.set_value("paid_amount", _intimacion + _paid_amount)
+							}
+
+						});
+
+					frm.payment_entry_prompt.fields_dict.gastos_intimacion.$wrapper.show();
+
+					// if checked then let's also show the section break
+					frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.show();
+
+				} else {
+					frm.payment_entry_prompt.fields_dict.gastos_intimacion.$wrapper.hide();
+
+					// finally if there's no value in the other one
+					if (!frm.payment_entry_prompt.get_value("has_gps") && !frm.payment_entry_prompt.get_value("has_recuperacion")) {
+						frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.hide();
+					}
+					
+					_intimacion = frm.payment_entry_prompt.get_value("gastos_intimacion");
+					frm.payment_entry_prompt.set_value("gastos_intimacion", 0.000);
+				}
+			};
+			frm.payment_entry_prompt.fields_dict.has_intimacion.bind_change_event();
 
 			frm.payment_entry_prompt.fields_dict.has_recuperacion.change = (event) => {
 				let checked = frm.payment_entry_prompt.get_value("has_recuperacion");
@@ -1353,6 +1408,7 @@ frappe.ui.form.on('Loan', {
 					frm.payment_entry_prompt.set_value("gastos_recuperacion", flt(frappe.boot.fm_configuration.recuperation_amount))
 						.then(() => {
 							let _recuperacion = frm.payment_entry_prompt.get_value("gastos_recuperacion");
+							let _intimacion = frm.payment_entry_prompt.get_value("gastos_intimacion");
 							let _gps = frm.payment_entry_prompt.get_value("gps");
 							let _paid_amount = frm.payment_entry_prompt.get_value("paid_amount") +
 								frm.payment_entry_prompt.get_value("other_discounts");
@@ -1372,12 +1428,12 @@ frappe.ui.form.on('Loan', {
 					frm.payment_entry_prompt.fields_dict.gastos_recuperacion.$wrapper.hide();
 
 					// finally if there's no value in the other one
-					if (!frm.payment_entry_prompt.get_value("has_gps")) {
+					if (!frm.payment_entry_prompt.get_value("has_gps") && !frm.payment_entry_prompt.get_value("has_intimacion")) {
 						frm.payment_entry_prompt.fields_dict.miscelaneos.wrapper.hide();
 					}
 
 					_recuperacion = frm.payment_entry_prompt.get_value("gastos_recuperacion");
-					frm.payment_entry_prompt.set_value("gastos_recuperacion", 0.000);
+					frm.payment_entry_prompt.set_value("gastos_recuperacion", 0.000);					
 				}
 			};
 			frm.payment_entry_prompt.fields_dict.has_recuperacion.bind_change_event();
@@ -1440,6 +1496,7 @@ frappe.ui.form.on('Loan', {
 			frm.payment_entry_prompt.fields_dict.add_user_remarks.bind_change_event();
 
 			frm.payment_entry_prompt.set_value("gastos_recuperacion", 0.000);
+			frm.payment_entry_prompt.set_value("gastos_intimacion", 0.000);
 			frm.payment_entry_prompt.set_value("gps", 0.000);
 			frm.payment_entry_prompt.set_value("has_gps", 0.000);
 			frm.payment_entry_prompt.set_value("has_recuperacion", 0.000);

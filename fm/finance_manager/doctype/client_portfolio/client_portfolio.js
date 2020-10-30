@@ -21,6 +21,10 @@ frappe.ui.form.on('Client Portfolio', {
 		if (frm.is_new())
 			return
 
+		frm.add_custom_button(__("Move Customer"), () => {
+			frm.trigger("show_move_cust_prompt");
+		});
+
 		frm.add_custom_button(__("Payments"), () => {
 			frappe.set_route(
 				'query-report',
@@ -54,6 +58,45 @@ frappe.ui.form.on('Client Portfolio', {
 			frm.refresh();
 		});
 		frm.trigger("update_customer_qty");
+	},
+	show_move_cust_prompt: frm => {
+		let fields =[
+			{
+				"label": __("Loan"),
+				"fieldname": "loan",
+				"fieldtype": "Link",
+				"options": "Loan",
+				"reqd": 1,
+			},
+			{
+				"label": __("Customer"),
+				"fieldname": "customer",
+				"fieldtype": "Read Only",
+			},
+			{
+				"fieldtype": "Column Break"
+			},
+			{
+				"label": __("Client Portfolio"),
+				"fieldname": "client_portfolio",
+				"fieldtype": "Link",
+				"options": "Client Portfolio",
+				"reqd": 1,
+			},
+		]
+		let _cb = (data) => {
+			frm.doc.loan_to_move = data.loan;
+			frm.doc.new_portfolio = data.client_portfolio;
+			frappe.run_serially([
+				() => frappe.dom.freeze(`Moviendo <b>${data.loan}</b> a <b>${data.client_portfolio}</b>, por favor espere...`),
+				() => frm.call("move_loan"),
+				() => frappe.dom.unfreeze(),
+				() => frappe.show_alert(`El Prestamo ${data.loan} fue movido exitosamente!`),
+				() => frm.reload_doc(),
+			])
+		}
+
+		frappe.prompt(fields, _cb, "Move Customer", "Mover");
 	}
 
 });
