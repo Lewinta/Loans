@@ -11,8 +11,7 @@ OVERDUE = "VENCIDA"
 
 # Loans with these statuses are not allowed on Client Portfolio
 
-DISALLOWED_STATUSES = ['Legal', 'Recuperado', 'Incautado', 'Perdida Total', 'Repaid/Closed', 'Disponible']
-
+DISALLOWED_STATUSES = ['Legal', 'Recuperado', 'Incautado', 'Perdida Total', 'Repaid/Closed', 'Disponible', 'Intimado']
 
 def get_repayment(loan, repayment):
 	for row in loan.repayment_schedule:
@@ -160,7 +159,6 @@ def get_exchange_rates(base):
 		)
 
 	return rates
-
 
 @frappe.whitelist()
 def exchange_rate_USD(currency):

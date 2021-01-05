@@ -34,8 +34,8 @@ def get_data(filters):
 
 	loans = [x.loan for x in portfolio.customer_portfolio]
 	loans = "','".join(loans)
-
-	return  frappe.db.sql("""
+	results = []
+	data =  frappe.db.sql("""
 		SELECT
 			`tabJournal Entry`.name,
 			`tabJournal Entry`.posting_date,
@@ -103,7 +103,24 @@ def get_data(filters):
 			`tabJournal Entry`.docstatus = 1
 		GROUP BY 
 			`tabJournal Entry`.name
-		
-		
-
-	""" % (loans, portfolio.start_date, portfolio.end_date), debug=False)
+	""" % (loans, portfolio.start_date, portfolio.end_date), as_dict=True, debug=False)
+	for row in data:
+		results.append(
+			(
+				row.name,
+				row.posting_date,
+				row.customer,
+				row.loan,
+				row.repayment_no,
+				row.capital - row.other_discounts,
+				row.fine,
+				row.insurance,
+				row.other_discounts,
+				row.gastos_recuperacion,
+				row.total_debit,
+				row.voucher_type,
+				row.cheque_no,
+				row.branch_office
+			)
+		)
+	return results

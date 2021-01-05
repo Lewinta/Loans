@@ -5,6 +5,13 @@ frappe.ui.form.on('Client Portfolio', {
 	refresh: frm => {
 		frm.trigger("add_custom_button");
 		frm.trigger("set_queries");
+		frm.set_df_property(
+			"amount_to_collect",
+			"read_only",
+			frappe.session.user != "Administrator",
+			cur_frm.docname,
+			"customer_portfolio"
+		);
 	},
 	set_queries: frm => {
 		frm.set_query("loan", "customer_portfolio", function () {
@@ -67,6 +74,15 @@ frappe.ui.form.on('Client Portfolio', {
 				"fieldtype": "Link",
 				"options": "Loan",
 				"reqd": 1,
+				onchange: function(){
+					let loan = cur_dialog.get_value("loan");
+					if (!loan)
+						return
+					frappe.db.get_value("Loan", loan, "customer_name", r => {
+						if(r && r.customer_name)
+							cur_dialog.set_value("customer", r.customer_name)
+					})
+				}
 			},
 			{
 				"label": __("Customer"),
@@ -82,6 +98,27 @@ frappe.ui.form.on('Client Portfolio', {
 				"fieldtype": "Link",
 				"options": "Client Portfolio",
 				"reqd": 1,
+				get_query: function (){
+					return {
+						"filters": {
+							"name": ["!=", frm.docname]
+						}
+					}
+				},
+				onchange: function(){
+					let client_portfolio = cur_dialog.get_value("client_portfolio");
+					if (!client_portfolio)
+						return
+					frappe.db.get_value("Client Portfolio", client_portfolio, "description", r => {
+						if(r && r.description)
+							cur_dialog.set_value("description", r.description)
+					})
+				}
+			},
+			{
+				"label": __("Description"),
+				"fieldname": "description",
+				"fieldtype": "Read Only",
 			},
 		]
 		let _cb = (data) => {

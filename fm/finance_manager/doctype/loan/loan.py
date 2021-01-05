@@ -450,6 +450,8 @@ class Loan(AccountsController):
 			WHERE
 				`tabTabla Amortizacion`.parent = %s
 			AND
+				`tabTabla Amortizacion`.estado not in ('SALDADA', 'PENDIENTE')
+			AND
 				`tabTabla Amortizacion`.fecha < %s
 		""", (self.name, date), debug=False)[0][0]
 	

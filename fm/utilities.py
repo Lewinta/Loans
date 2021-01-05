@@ -299,3 +299,8 @@ def get_month_start(date):
 	from calendar import monthrange
 
 	return date.replace(day = monthrange(date.year, date.month)[0])
+
+def after_insert_deleted_doc(doc, event):
+	doc.responsible = frappe.session.user
+	doc.db_update()
+	frappe.db.commit()

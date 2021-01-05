@@ -239,7 +239,6 @@ def has_payments(rpmt, to_date, from_date=False):
 			payments
 		)
 
-
 def calculate_fine(rpmt, curdate):
 	rpmt = frappe._dict(rpmt)
 	fine_rate = frappe.db.get_value("Loan", rpmt.parent, "fine") / 100.0

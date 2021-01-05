@@ -591,7 +591,7 @@ frappe.ui.form.on('Loan', {
 
 
 		frm.add_custom_button('Agregar', () => frm.trigger("add_fines"), "Mora");
-		frm.add_custom_button('Borrar', () => frm.trigger("clean_fines"), "Mora");
+		// frm.add_custom_button('Borrar', () => frm.trigger("clean_fines"), "Mora");
 
 		if (frm.doc.status != "Repaid/Closed") {
 			frm.add_custom_button('Cambiar Fecha Cuotas', () => frm.trigger("update_payment_date"), "Fecha");
@@ -1200,14 +1200,14 @@ frappe.ui.form.on('Loan', {
 			{
 				"fieldname": "remarks_section",
 				"fieldtype": "Section Break",
-				"depends_on": "eval:['Administrator','licda.estrella@gmail.com'].includes(frappe.session.user)"
+				"depends_on": "eval:['Administrator','licda.estrella@gmail.com', 'rosmery2492@hotmail.com', 'jalexpujols@gmail.com'].includes(frappe.session.user)"
 			},
 			{
 				"label": "Nombre del Pago",
 				"fieldname": "new_name",
 				"fieldtype": "Int",
 				"bold": 1,
-				"depends_on": "eval:['Administrator','licda.estrella@gmail.com'].includes(frappe.session.user)"
+				"depends_on": "eval:['Administrator','licda.estrella@gmail.com', 'rosmery2492@hotmail.com', 'jalexpujols@gmail.com'].includes(frappe.session.user)"
 			},
 			{
 				"fieldname": "remarks_section",

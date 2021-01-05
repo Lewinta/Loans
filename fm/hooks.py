@@ -52,7 +52,7 @@ doctype_js = {
 	"Translation" : "public/js/translation.js",
 	"Vehicle" : "public/js/vehicle.js"
 }
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {"Vehicle" : "public/js/vehicle_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 
 # Home Pages
@@ -119,6 +119,9 @@ doc_events = {
 	},
 	"Customer": {
 		"autoname": "fm.api.customer_autoname"
+	},
+	"Deleted Document": {
+		"after_insert": "fm.utilities.after_insert_deleted_doc"
 	}
 }
 
@@ -130,7 +133,7 @@ scheduler_events = {
 		"fm.scheduler.calculate_fines",
 		"fm.scheduler.update_exchange_rates",
 		"fm.scheduler.update_insurance_status",
-		# "fm.scheduler.assign_loans",
+		"fm.scheduler.assign_loans",
 		"fm.scheduler.update_client_portfolio",
 		"fm.backup.daily"
 	]

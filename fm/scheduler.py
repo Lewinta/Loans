@@ -4,7 +4,7 @@ import frappe
 from math import ceil
 from frappe.desk.tags import DocTags
 from fm.api import FULLY_PAID
-from frappe.utils import cstr, flt, nowdate, add_months, add_days
+from frappe.utils import cstr, flt, nowdate, add_months, add_days, get_last_day
 
 def calculate_fines():
 	# if frappe.conf.get("developer_mode"):
@@ -209,88 +209,133 @@ def clean_portfolios():
 		doc.save()
 
 def assign_loans():
-	remove_loan_tags()
-	clean_portfolios()
+	# remove_loan_tags()
+	# clean_portfolios()
 	# MXT
 	# ------------------------
+	if int(nowdate().split("-")[2]) != 1:
+		return
+	regular_status = """
+		'Recuperado', 'Legal', 'Incautado', 'Intimado',
+		'Disponible', 'Repaid/Closed', 'Perdida Total'
+	"""
+	legal_status = """ 'Recuperado', 'Legal', 'Incautado', 'Intimado' """
 
-	filters = {
-		"branch_office": "MXT",
-		"docstatus": 1,
-		"status": ["!=", "Recuperado"],
+	date_obj = {
+		"start_date": nowdate(),
+		"end_date": str(get_last_day(nowdate()))
 	}
 
 	doc = frappe.get_doc("Client Portfolio", "CART-00001")
+	doc.update(date_obj)
+	lst = frappe.db.sql("""
+		SELECT 
+			`tabLoan`.name,
+			`tabLoan`.customer
+		FROM
+			`tabLoan`
+		WHERE
+			`tabLoan`.name NOT IN (SELECT `tabCustomer Portfolio`.loan FROM `tabCustomer Portfolio`)
+		AND
+			`tabLoan`.docstatus = 1
+		AND
+			`tabLoan`.status not in (%s) 
+		AND 
+			`tabLoan`.branch_office = 'MXT'
+	""", regular_status)
 
-	doc.customer_portfolio = []
-	for loan, customer in frappe.get_list("Loan", filters, ["name", "customer_name"], as_list=True):
-		doc.append("customer_portfolio", {"loan": loan, "customer": customer})
+	# doc.customer_portfolio = []
+	idx = 0
+	for loan, customer in lst:
+			doc.append("customer_portfolio", {"loan": loan, "customer": customer})
 	doc.save()
 	frappe.db.commit()
 
 	# SANTIAGO
 	# ------------------------
 
-	filters = {
-		"branch_office": "SANTIAGO",
-		"docstatus": 1,
-		"status": ["!=", "Recuperado"],
-	}
-
 	doc = frappe.get_doc("Client Portfolio", "CART-00005")
+	doc.update(date_obj)
+	lst = frappe.db.sql("""
+		SELECT 
+			`tabLoan`.name,
+			`tabLoan`.customer
+		FROM
+			`tabLoan`
+		WHERE
+			`tabLoan`.name NOT IN (SELECT `tabCustomer Portfolio`.loan FROM `tabCustomer Portfolio`)
+		AND
+			`tabLoan`.docstatus = 1
+		AND
+			`tabLoan`.status not in (%s) 
+		AND 
+			`tabLoan`.branch_office = 'SANTIAGO'
+	""", regular_status)
 
-	doc.customer_portfolio = []
-	for loan, customer in frappe.get_list("Loan", filters, ["name", "customer_name"], as_list=True):
+	# doc.customer_portfolio = []
+	
+	for loan, customer in lst:
 		doc.append("customer_portfolio", {"loan": loan, "customer": customer})
 	doc.save()
+	
+	frappe.db.commit()
+
+	# SANTIAGO (LEGAL)
+	# ------------------------
+
+	doc = frappe.get_doc("Client Portfolio", "CART-00007")
+	doc.update(date_obj)
+	lst = frappe.db.sql("""
+		SELECT 
+			`tabLoan`.name,
+			`tabLoan`.customer
+		FROM
+			`tabLoan`
+		WHERE
+			`tabLoan`.name NOT IN (SELECT `tabCustomer Portfolio`.loan FROM `tabCustomer Portfolio`)
+		AND
+			`tabLoan`.docstatus = 1
+		AND
+			`tabLoan`.status in (%s) 
+		AND 
+			`tabLoan`.branch_office = 'SANTIAGO'
+	""", legal_status)
+
+	# doc.customer_portfolio = []
+	
+	for loan, customer in lst:
+		doc.append("customer_portfolio", {"loan": loan, "customer": customer})
+	doc.save()
+	
 	frappe.db.commit()
 
 	# SANTO DOMINGO 4
 	# ------------------------
 
 	doc = frappe.get_doc("Client Portfolio", "CART-00004")
+	doc.update(date_obj)
 	lst = frappe.db.sql("""
-	select 
-	 	`tabTabla Amortizacion`.parent,
-	 	`tabLoan`.customer,
-	 	count(1) qty 
-	from 
-	 	`tabTabla Amortizacion` 
-	JOIN
-		`tabLoan`
-	ON
-		`tabLoan`.name = `tabTabla Amortizacion`.parent
+		SELECT 
+			`tabLoan`.name,
+			`tabLoan`.customer
+		FROM
+			`tabLoan`
+		WHERE
+			`tabLoan`.name NOT IN (SELECT `tabCustomer Portfolio`.loan FROM `tabCustomer Portfolio`)
+		AND
+			`tabLoan`.docstatus = 1
+		AND
+			`tabLoan`.status in (%s) 
+		AND 
+			`tabLoan`.branch_office in ('SANTO DOMINGO', 'MXT')
+	""", legal_status)
 
-	where
-		`tabTabla Amortizacion`.estado = 'VENCIDA'
-	and
-		`tabLoan`.docstatus = 1
-	and
-		`tabLoan`.status not in ('Recuperado', 'Legal', 'Intimado')
-	and 
-		`tabLoan`.branch_office = 'SANTO DOMINGO'
-	group by 
-		`tabTabla Amortizacion`.parent 
-	having 
-		qty >= 5 
-
-	union 
-
-	select 
-		`tabLoan`.name, `tabLoan`.customer, 100
-	from 
-		`tabLoan`
-	where 
-		`tabLoan`.docstatus = 1
-	and
-		`tabLoan`.status = 'Legal'
-	and 
-		`tabLoan`.branch_office = 'SANTO DOMINGO'
-	""")
-	doc.customer_portfolio = []
-	for loan, customer, qty in lst:
+	# doc.customer_portfolio = []
+	
+	for loan, customer in lst:
 		doc.append("customer_portfolio", {"loan": loan, "customer": customer})
 	doc.save()
+	
 	frappe.db.commit()
 
 
@@ -299,42 +344,33 @@ def assign_loans():
 
 	doc1 = frappe.get_doc("Client Portfolio", "CART-00002")
 	doc2 = frappe.get_doc("Client Portfolio", "CART-00003")
+
+	doc1.update(date_obj)
+	doc2.update(date_obj)
+	
 	lst = frappe.db.sql("""
-	select 
-	 	`tabTabla Amortizacion`.parent,
-	 	`tabLoan`.customer,
-	 	count(1) qty 
-	from 
-	 	`tabTabla Amortizacion` 
-	JOIN
-		`tabLoan`
-	ON
-		`tabLoan`.name = `tabTabla Amortizacion`.parent
+		SELECT 
+			`tabLoan`.name,
+			`tabLoan`.customer
+		FROM
+			`tabLoan`
+		WHERE
+			`tabLoan`.name NOT IN (SELECT `tabCustomer Portfolio`.loan FROM `tabCustomer Portfolio`)
+		AND
+			`tabLoan`.docstatus = 1
+		AND
+			`tabLoan`.status not in (%s) 
+		AND 
+			`tabLoan`.branch_office = 'SANTO DOMINGO'
+	""", regular_status)
 
-	where
-		`tabTabla Amortizacion`.estado = 'VENCIDA'
-	and
-		`tabLoan`.docstatus = 1
-	and
-		`tabLoan`.status not in ('Recuperado')
-	and 
-		`tabLoan`.branch_office = 'SANTO DOMINGO'
-	group by 
-		`tabTabla Amortizacion`.parent 
-	having 
-		qty < 5 
-
-	""")
-
-	doc1.customer_portfolio = []
-	doc2.customer_portfolio = []
-	idx = 0
-	for loan, customer, qty in lst:
-		if idx % 2 == 0:
+	# doc1.customer_portfolio = []
+	# doc2.customer_portfolio = []
+	for loan, customer in lst:
+		if int(loan.split("-")[1]) % 2 == 0:
 			doc1.append("customer_portfolio", {"loan": loan, "customer": customer})
 		else:
 			doc2.append("customer_portfolio", {"loan": loan, "customer": customer})
-		idx +=1
 
 	doc1.save()
 	doc2.save()

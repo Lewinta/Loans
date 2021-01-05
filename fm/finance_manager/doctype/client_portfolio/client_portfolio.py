@@ -69,25 +69,36 @@ class ClientPortfolio(Document):
 	def validate_date(self):
 		if self.start_date > self.end_date:
 			frappe.throw(_("End Date must be greater than Start Date"))
+
 	def add_tag(self, loan):
 		DocTags("Loan").remove_all(loan)
 		DocTags("Loan").add(loan, self.employee_name)
 
 	def remove_loan_from_portfolio(self):
 		for row in self.customer_portfolio:
-			status = frappe.db.get_value("Loan", row.loan, "status")
-			if status in ['Recuperado', 'Incautado', 'Perdida Total', 'Legal']:
+			status, branch_office = frappe.db.get_value("Loan", row.loan, ["status", "branch_office"])
+			portfolio = 'CART-00007' if branch_office == 'SANTIAGO' else 'CART-00004'
+			if self.name == portfolio:
+				# If someone change within invalid statuses no changes are needed
+				continue
+			if status in DISALLOWED_STATUSES:
 				DocTags("Loan").remove_all(row.loan)
 				self.remove(row)
 				self.save(ignore_permissions=True)
+				client_portfolio = frappe.get_doc("Client Portfolio", portfolio)
+				client_portfolio.append("customer_portfolio", {
+					"loan": row.loan
+ 				})
+				client_portfolio.save(ignore_permissions=True)
+
 
 	def remove_paid_loans(self):
 		for row in self.customer_portfolio:
-			status = frappe.db.get_value("Loan", row.loan, "status")
-			if status == 'Repaid/Closed' and row.received_amount == .000:
+			if row.status == 'Repaid/Closed' and row.received_amount == .000:
 				DocTags("Loan").remove_all(row.loan)
 				self.remove(row)
-				self.save(ignore_permissions=True)
+				frappe.errprint(row.loan)
+		self.save(ignore_permissions=True)
 
 	def show_invalid_loans(self):
 		for l in self.customer_portfolio:
@@ -99,22 +110,38 @@ class ClientPortfolio(Document):
 		if not self.customer_portfolio:
 			return
 		
-		self.total_pending = self.total_received = self.net_received = self.total_discounts = .000
+		self.total_pending = self.total_received = self.net_received = self.total_discounts = self.amount_to_collect = .000
 		self.customer_qty = 0
 		
 		for row in self.customer_portfolio:
 			loan = frappe.get_doc("Loan", row.loan)
-			row.pending_amount = loan.get_past_due_balance(self.end_date)
+			filters = {"loan": row.loan, "start_date": self.start_date, "end_date": self.end_date}
+			
+			if not frappe.db.exists("Portfolio Log", filters):
+				portfolio_log = frappe.new_doc("Portfolio Log")
+				portfolio_log.update({
+					"loan": row.loan,
+					"amount_to_collect": loan.get_past_due_balance(self.end_date),
+					"start_date": self.start_date,
+					"end_date": self.end_date,
+				})
+				portfolio_log.save(ignore_permissions=True)
+
+			row.pending_amount = frappe.db.get_value("Portfolio Log", filters, "amount_to_collect")
 			row.received_amount, row.total_discount, row.total_paid = loan.get_paid_amount(self.start_date, self.end_date)
+			if not row.amount_to_collect or row.pending_amount > row.amount_to_collect:
+				row.amount_to_collect = row.pending_amount + row.total_paid
 
 			self.total_discounts += row.total_discount
 			self.net_received    += row.received_amount
 			self.total_received  += row.total_paid
 			self.total_pending   += row.pending_amount
+			self.amount_to_collect += row.amount_to_collect
 			self.add_tag(loan.name)
 
 		self.customer_qty = len(self.customer_portfolio)
-		self.percentage_received = flt(self.net_received / self.total_pending * 100, 2) if self.net_received > 0 else .000
+		# self.percentage_received = flt(self.net_received / self.total_pending * 100, 2) if self.net_received > 0 else .000
+		self.percentage_received = flt(self.net_received / self.amount_to_collect * 100, 2) if self.net_received > 0 else .000
 	
 	def move_loan(self):
 		frappe.errprint("Let's move {} to {}".format(self.loan_to_move, self.new_portfolio))
@@ -132,6 +159,5 @@ class ClientPortfolio(Document):
 		new_portfolio = frappe.get_doc("Client Portfolio", self.new_portfolio)
 		new_portfolio.append("customer_portfolio", {"loan": result[0].loan})
 		new_portfolio.save()
-		frappe.errprint("NEw SAved")
 
 

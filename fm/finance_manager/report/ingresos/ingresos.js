@@ -16,7 +16,6 @@ frappe.query_reports["Ingresos"] = {
 			"fieldname":"branch_office",
 			"fieldtype": "Link",
 			"options": "Branch Office",
-			"reqd": 1
 		},
 		{
 			"fieldname":"from_date",

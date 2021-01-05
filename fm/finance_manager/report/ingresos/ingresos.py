@@ -22,6 +22,7 @@ def execute(filters=None):
 	# if filters.get("branch_office"):
 	# 	branch_office_condition = 'AND branch_office=%(branch_office)s'
 
+	branch = 'AND branch_office = %(branch_office)s' if filters.get('branch_office') else ''
 	result = frappe.db.sql("""
 		SELECT
 			parent.posting_date,
@@ -48,11 +49,11 @@ def execute(filters=None):
 			%(from_date)s 
 		AND 
 			%(to_date)s
-		AND
-				branch_office = %(branch_office)s
+		{}
+
 		GROUP BY yearmonth
 		ORDER BY
-			parent.posting_date""", filters, as_dict=True, debug=False)
+			parent.posting_date""".format(branch), filters, as_dict=True, debug=False)
 
 	loan_result = frappe.db.sql("""
 		SELECT
@@ -67,11 +68,10 @@ def execute(filters=None):
 			l.docstatus = 1
 			AND
 				posting_date BETWEEN %(from_date)s AND %(to_date)s
-			AND
-				branch_office = %(branch_office)s
+			{}
 		GROUP BY yearmonth
 		ORDER BY
-			l.posting_date""", filters, as_dict=True, debug=False)
+			l.posting_date""".format(branch), filters, as_dict=True, debug=False)
 
 	for row in result:
 		key = row.posting_date.strftime("%Y-%m")
